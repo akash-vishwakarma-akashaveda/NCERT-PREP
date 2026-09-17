@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Notes attachments (PDF / images) uploaded from the admin dashboard.
+    // Readable by anyone holding the download URL, which is only exposed through notes documents.
+    match /notes/{chapterKey}/{fileName} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.size < 20 * 1024 * 1024
+        && (request.resource.contentType == 'application/pdf'
+            || request.resource.contentType.matches('image/(png|jpeg|webp)'));
+      allow delete: if isAdmin();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

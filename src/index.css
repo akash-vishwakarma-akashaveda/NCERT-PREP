@@ -1,0 +1,205 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #3B4FE0;
+  --color-primary-hover: #2F40BD;
+  --color-secondary: #12A594;
+  --color-secondary-hover: #0E8577;
+  --text-primary: #1E2233;
+  --text-secondary: #6B7280;
+  --surface: #FFFFFF;
+  --bg-page: #F5F6FA;
+  --border: #E3E5EC;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* Accessibility Focus Ring (WCAG 2.1 AA) */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Smooth custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F2F6;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Shimmer animation for skeleton loaders (FR-4) */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #EDEFF5 25%, #F7F8FC 50%, #EDEFF5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ---------- Bento design system ---------- */
+.bento {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  box-shadow: 0 1px 2px rgba(30, 34, 51, 0.04), 0 8px 24px -12px rgba(30, 34, 51, 0.08);
+}
+
+.bento-hover {
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.bento-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(59, 79, 224, 0.35);
+  box-shadow: 0 1px 2px rgba(30, 34, 51, 0.04), 0 16px 32px -16px rgba(59, 79, 224, 0.25);
+}
+
+.bg-mesh {
+  background:
+    radial-gradient(40rem 24rem at 10% -10%, rgba(59, 79, 224, 0.14), transparent 60%),
+    radial-gradient(36rem 22rem at 95% 0%, rgba(18, 165, 148, 0.14), transparent 60%),
+    radial-gradient(30rem 20rem at 60% 110%, rgba(236, 72, 153, 0.07), transparent 60%);
+}
+
+.bg-dots {
+  background-image: radial-gradient(rgba(30, 34, 51, 0.08) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.text-gradient-brand {
+  background: linear-gradient(90deg, #3B4FE0 0%, #5B6CF0 45%, #12A594 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 450ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .bento-hover {
+    animation: none;
+    transition: none;
+  }
+  .bento-hover:hover {
+    transform: none;
+  }
+}
+
+/* Soft brand glow behind the home screens, fading into the page background. */
+.page-glow {
+  background-color: var(--bg-page);
+  background-image:
+    radial-gradient(60rem 28rem at 15% -8rem, rgba(59, 79, 224, 0.12), transparent 70%),
+    radial-gradient(50rem 26rem at 90% -6rem, rgba(18, 165, 148, 0.12), transparent 70%);
+  background-repeat: no-repeat;
+}
+
+/* ---------- Landing page motion ---------- */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes gradient-pan {
+  from { background-position: 0% 50%; }
+  to { background-position: 200% 50%; }
+}
+
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes pop-in {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(59, 79, 224, 0.45); }
+  100% { box-shadow: 0 0 0 14px rgba(59, 79, 224, 0); }
+}
+
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-grow-x { transform-origin: left; animation: grow-x 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s both; }
+.animate-pop { animation: pop-in 0.4s ease-out both; }
+.animate-pulse-ring { animation: pulse-ring 2s ease-out infinite; }
+
+.animate-gradient-text {
+  background-image: linear-gradient(90deg, #3B4FE0, #12A594, #3B4FE0);
+  background-size: 200% auto;
+  animation: gradient-pan 6s linear infinite;
+}
+
+/* Scroll reveal. Content only starts hidden once JS marks the page ready, so it never disappears without JS. */
+.reveal-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal-ready [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-grow-x,
+  .animate-pop,
+  .animate-pulse-ring,
+  .animate-gradient-text {
+    animation: none;
+  }
+  .reveal-ready [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
