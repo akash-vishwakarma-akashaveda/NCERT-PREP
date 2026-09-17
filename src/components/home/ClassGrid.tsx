@@ -15,8 +15,13 @@ export const ClassGrid: React.FC<ClassGridProps> = ({ classes, onSelectClass }) 
         <h2 id="visual-grid-title" className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1E2233]">
           Browse by class
         </h2>
-        <p className="text-sm text-[#6B7280]">Tap a class to see its subjects and chapters.</p>
+        <p className="text-sm text-[#6B7280]">
+          Sample preview lessons free. Sign in with a free account to unlock all chapters, notes & doubts.
+        </p>
       </div>
+      <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#3B4FE0]/10 text-[#3B4FE0] border border-[#3B4FE0]/20">
+        Free Previews Available
+      </span>
     </div>
 
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -49,9 +54,14 @@ export const ClassGrid: React.FC<ClassGridProps> = ({ classes, onSelectClass }) 
             </div>
             <div className="relative space-y-1.5">
               <p className="text-[11px] font-medium opacity-80 line-clamp-1">{cls.subjects.join(' · ') || 'Coming soon'}</p>
-              <p className="text-xs font-semibold">
-                {cls.videoCount} {cls.videoCount === 1 ? 'lesson' : 'lessons'}
-              </p>
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-xs font-semibold">
+                  {cls.videoCount} {cls.videoCount === 1 ? 'lesson' : 'lessons'}
+                </p>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/70 shadow-2xs">
+                  Free Preview
+                </span>
+              </div>
             </div>
           </button>
         );

@@ -1,9 +1,28 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Play, Flame, ChevronRight, CheckCircle2, Circle, MessageCircleQuestion, Bell, Timer, Trophy, GraduationCap } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Play,
+  Flame,
+  ChevronRight,
+  CheckCircle2,
+  Circle,
+  MessageCircleQuestion,
+  Bell,
+  Timer,
+  Trophy,
+  GraduationCap,
+  Sparkles,
+  Megaphone,
+  AlertTriangle,
+  ArrowRight,
+  Pin,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/ProgressContext';
 import { useDoubts } from '../../context/DoubtsContext';
+import { useCatalogContext } from '../../context/CatalogContext';
+import { useDashboardConfig } from '../../hooks/useDashboardConfig';
+import { AdminDashboard } from '../../pages/admin/AdminDashboard';
 import { classLabel, currentStreak, streakWeek, xpStats } from '../../data/gamification';
 import { reminderSummary } from '../../components/profile/ReminderSettingsCard';
 import { useCourse } from '../useCourse';
@@ -20,19 +39,46 @@ export const HomePage: React.FC = () => {
   const { isCompleted } = useProgress();
   const { unreadCount, myDoubts } = useDoubts();
   const course = useCourse();
+  const { allVideos, records, refreshCatalog } = useCatalogContext();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = (searchParams.get('tab') as any) || 'overview';
+  const initialNavOptions = {
+    notesKey: searchParams.get('notesKey') || undefined,
+    doubtId: searchParams.get('doubtId') || undefined,
+  };
 
   if (!user) return null;
 
+  // When logged in as Administrator, immediately render the full Admin Dashboard
+  if (isAdmin || user.role === 'admin' || user.email === 'admin@ncertprep.edu') {
+    return (
+      <AdminDashboard
+        allVideos={allVideos}
+        records={records}
+        onRefreshCatalog={refreshCatalog}
+        onBackToApp={() => navigate('/browse')}
+        onSelectVideo={(v) => navigate(`/app/lesson/${encodeURIComponent(v.youtube_id)}`)}
+        currentSection={currentTab}
+        onSectionChange={(nextSection, options) => {
+          const nextParams: Record<string, string> = { tab: nextSection };
+          if (options?.notesKey) nextParams.notesKey = options.notesKey;
+          if (options?.doubtId) nextParams.doubtId = options.doubtId;
+          setSearchParams(nextParams);
+        }}
+        initialNavOptions={initialNavOptions}
+        hideSidebar={true}
+      />
+    );
+  }
+
   if (!course.classSort) {
-    return isAdmin ? (
+    return (
       <EmptyState
         icon={<GraduationCap className="w-5 h-5" />}
-        title="You're signed in as an administrator"
-        body="Manage classes, lessons, notes and doubts from the admin dashboard."
-        action={<Link to="/admin" className={btnPrimary}>Open admin dashboard</Link>}
+        title="Choose your class to get started"
+        body="Finish the setup to see your subjects."
       />
-    ) : (
-      <EmptyState icon={<GraduationCap className="w-5 h-5" />} title="Choose your class to get started" body="Finish the setup to see your subjects." />
     );
   }
 
@@ -47,6 +93,25 @@ export const HomePage: React.FC = () => {
     .slice(0, 5);
   const openDoubts = myDoubts.filter((d) => d.status === 'open').length;
 
+  const { config } = useDashboardConfig();
+  const studentClassInt = parseInt(course.classSort.replace(/\D/g, ''), 10);
+  const ann = config?.announcement;
+  const isAnnTarget = Boolean(
+    ann &&
+      ann.isActive &&
+      (ann.targetClass === 'all' ||
+        ann.targetClass === course.classSort ||
+        parseInt(ann.targetClass.replace(/\D/g, ''), 10) === studentClassInt)
+  );
+
+  const spotlight = config?.spotlights
+    ? config.spotlights[course.classSort] ||
+      config.spotlights[String(studentClassInt)] ||
+      config.spotlights[studentClassInt < 10 ? `0${studentClassInt}` : String(studentClassInt)]
+    : undefined;
+
+  const isSpotlightActive = Boolean(spotlight && spotlight.isActive);
+
   return (
     <div className="space-y-8">
       <header>
@@ -55,6 +120,103 @@ export const HomePage: React.FC = () => {
           {greeting()}, {user.displayName?.split(' ')[0] || 'there'}
         </h1>
       </header>
+
+      {/* Broadcast Announcement Banner */}
+      {isAnnTarget && ann && (
+        <section aria-label="Educator announcement" className="animate-in fade-in duration-300">
+          <div
+            className={`rounded-2xl p-4 sm:p-5 border transition-all ${
+              ann.tone === 'exam'
+                ? 'bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white border-purple-500/30 shadow-sm'
+                : ann.tone === 'warning'
+                ? 'bg-amber-50 border-amber-200 text-amber-950'
+                : ann.tone === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                : 'bg-blue-50 border-blue-200 text-blue-950'
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3 min-w-0">
+                <span
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                    ann.tone === 'exam'
+                      ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-400/30'
+                      : ann.tone === 'warning'
+                      ? 'bg-amber-100 text-amber-800'
+                      : ann.tone === 'success'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}
+                >
+                  {ann.tone === 'exam' ? (
+                    <Sparkles className="w-5 h-5" />
+                  ) : ann.tone === 'warning' ? (
+                    <AlertTriangle className="w-5 h-5" />
+                  ) : ann.tone === 'success' ? (
+                    <CheckCircle2 className="w-5 h-5" />
+                  ) : (
+                    <Megaphone className="w-5 h-5" />
+                  )}
+                </span>
+                <div className="min-w-0 space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                        ann.tone === 'exam'
+                          ? 'bg-purple-500/30 text-purple-200 border border-purple-400/20'
+                          : ann.tone === 'warning'
+                          ? 'bg-amber-200/80 text-amber-900'
+                          : ann.tone === 'success'
+                          ? 'bg-emerald-200/80 text-emerald-900'
+                          : 'bg-blue-200/80 text-blue-900'
+                      }`}
+                    >
+                      {ann.tone === 'exam'
+                        ? 'Exam & Board Notice'
+                        : ann.tone === 'warning'
+                        ? 'Important Alert'
+                        : ann.tone === 'success'
+                        ? 'Good News'
+                        : 'Educator Broadcast'}
+                    </span>
+                    <h2
+                      className={`text-sm sm:text-base font-bold truncate ${
+                        ann.tone === 'exam' ? 'text-white' : ''
+                      }`}
+                    >
+                      {ann.title}
+                    </h2>
+                  </div>
+                  <p
+                    className={`text-xs sm:text-sm leading-relaxed ${
+                      ann.tone === 'exam' ? 'text-slate-300' : 'text-current/80'
+                    }`}
+                  >
+                    {ann.message}
+                  </p>
+                </div>
+              </div>
+              {ann.actionLabel && ann.actionUrl && (
+                <Link
+                  to={ann.actionUrl}
+                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition-colors shadow-sm cursor-pointer ${
+                    ann.tone === 'exam'
+                      ? 'bg-white text-slate-900 hover:bg-slate-100'
+                      : ann.tone === 'warning'
+                      ? 'bg-amber-900 text-white hover:bg-amber-800'
+                      : ann.tone === 'success'
+                      ? 'bg-emerald-800 text-white hover:bg-emerald-700'
+                      : 'bg-[#3B4FE0] text-white hover:bg-[#2F3FB5]'
+                  }`}
+                >
+                  {ann.actionLabel}
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {course.allLessons.length === 0 ? (
         <EmptyState
@@ -66,6 +228,63 @@ export const HomePage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] 2xl:grid-cols-[minmax(0,1fr)_340px] gap-6 lg:gap-8">
           <div className="space-y-8 min-w-0">
+            {/* Educator Spotlight Section */}
+            {isSpotlightActive && spotlight && (
+              <section aria-labelledby="spotlight-title">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </span>
+                    <h2 id="spotlight-title" className="text-base font-semibold">
+                      Educator's Daily Spotlight
+                    </h2>
+                  </div>
+                  <span className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                    Recommended for Class {studentClassInt}
+                  </span>
+                </div>
+                <div className={`${card} overflow-hidden border-2 border-amber-200/80 bg-gradient-to-br from-amber-50/40 via-white to-white`}>
+                  <div className="p-5 flex flex-col sm:flex-row gap-5">
+                    <SubjectCover subject={spotlight.subject} className="sm:w-48 h-28 sm:h-auto rounded-xl shrink-0" />
+                    <div className="flex-1 min-w-0 flex flex-col justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap text-xs text-[#6B7280]">
+                          <span className="font-semibold text-[#1E2233]">{spotlight.subject}</span>
+                          <span>·</span>
+                          <span className="truncate">{spotlight.chapterName}</span>
+                          {isCompleted(spotlight.videoId) && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                              <CheckCircle2 className="w-3 h-3" /> Completed
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-base font-bold text-[#1E2233] leading-snug">
+                          {spotlight.title}
+                        </p>
+                        {spotlight.note && (
+                          <div className="mt-2.5 flex items-start gap-1.5 p-2.5 rounded-lg bg-amber-50 text-amber-900 border border-amber-200/70 text-xs">
+                            <Pin className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                            <p className="leading-relaxed">
+                              <span className="font-bold">Teacher's Note:</span> {spotlight.note}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 pt-1">
+                        <Link to={lessonPath(spotlight.videoId)} className={btnPrimary}>
+                          <Play className="w-4 h-4 fill-white" /> Watch Spotlight Lesson
+                        </Link>
+                        <Link to={subjectPath(spotlight.subject)} className={linkText}>
+                          View chapter
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
             {resume && (
               <section aria-labelledby="continue-title">
                 <h2 id="continue-title" className="text-base font-semibold mb-3">

@@ -5,10 +5,11 @@ import { Breadcrumbs } from '../components/navigation/Breadcrumbs';
 import { ChapterList } from '../components/navigation/ChapterList';
 import { ChapterListSkeleton } from '../components/common/SkeletonLoader';
 import { getClassCardStyle, getGradeStage, getStageConfig } from '../data/stageThemes';
-import { BookOpen, Layers } from 'lucide-react';
+import { BookOpen, Layers, Lock } from 'lucide-react';
 import { StageIcon } from '../components/common/StageIcon';
 import { SubjectGrid } from '../components/home/SubjectGrid';
 import { useProgress } from '../context/ProgressContext';
+import { useAuth } from '../context/AuthContext';
 
 interface BrowsePageProps {
   classes: ClassGroup[];
@@ -36,6 +37,7 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
   lockedToClass = false,
   onChangeClass,
 }) => {
+  const { user, setAuthModalOpen } = useAuth();
   const [currentClassSort, setCurrentClassSort] = useState<string>(selectedClassSort || '10');
   const [subjects, setSubjects] = useState<SubjectGroup[]>([]);
   const [activeSubject, setActiveSubject] = useState<string>('');
@@ -307,6 +309,32 @@ export const BrowsePage: React.FC<BrowsePageProps> = ({
             </p>
           </div>
         </div>
+
+        {/* Free Preview Notice for Unauthenticated Visitors */}
+        {!user && activeSubjectObj && (
+          <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-teal-50 border border-indigo-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#3B4FE0] text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[#1E2233] flex items-center gap-2">
+                  <span>Free Preview Mode · Chapter 1 Unlocked</span>
+                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#12A594] text-white">Sample</span>
+                </p>
+                <p className="text-xs text-[#6B7280]">
+                  Watch Chapter 1 as a free sample. Sign in or register for free to unlock all {activeSubjectObj.chapters.length} chapters, formula cheat sheets, and progress saving.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setAuthModalOpen(true)}
+              className="px-4 py-2 text-xs font-bold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-xl shadow-xs transition-all shrink-0 cursor-pointer self-start sm:self-auto hover:scale-105"
+            >
+              Sign in to unlock all
+            </button>
+          </div>
+        )}
 
         {activeSubjectObj ? (
           <ChapterList

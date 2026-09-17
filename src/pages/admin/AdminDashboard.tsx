@@ -7,8 +7,9 @@ import {
   MessageCircleQuestion,
   MessageSquare,
   Database,
-  ArrowLeft,
   Shield,
+  Sliders,
+  Eye,
 } from 'lucide-react';
 import { ChapterNotes, Doubt, Feedback, Video } from '../../types';
 import { CurriculumRecords, DoubtsService, NotesService, countStudentsByClass } from '../../services/content';
@@ -17,6 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import { buildAdminTree } from './adminTree';
 import { useToast } from './adminUi';
 import { OverviewSection } from './OverviewSection';
+import { StudentControlSection } from './StudentControlSection';
 import { CurriculumSection } from './CurriculumSection';
 import { VideosSection } from './VideosSection';
 import { NotesSection } from './NotesSection';
@@ -24,19 +26,23 @@ import { DoubtsSection } from './DoubtsSection';
 import { FeedbackSection } from './FeedbackSection';
 import { DataSection } from './DataSection';
 
-export type AdminSectionId = 'overview' | 'curriculum' | 'videos' | 'notes' | 'doubts' | 'feedback' | 'data';
+export type AdminSectionId = 'overview' | 'student-control' | 'curriculum' | 'videos' | 'notes' | 'doubts' | 'feedback' | 'data';
 
 export interface AdminNavigateOptions {
   notesKey?: string;
   doubtId?: string;
 }
 
-interface AdminDashboardProps {
+export interface AdminDashboardProps {
   allVideos: Video[];
   records: CurriculumRecords;
   onRefreshCatalog: () => Promise<void>;
   onBackToApp: () => void;
   onSelectVideo: (video: Video) => void;
+  currentSection?: AdminSectionId;
+  onSectionChange?: (section: AdminSectionId, options?: AdminNavigateOptions) => void;
+  initialNavOptions?: AdminNavigateOptions;
+  hideSidebar?: boolean;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -45,17 +51,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onRefreshCatalog,
   onBackToApp,
   onSelectVideo,
+  currentSection,
+  onSectionChange,
+  initialNavOptions,
+  hideSidebar = false,
 }) => {
   const { user } = useAuth();
   const adminName = user?.displayName || user?.email || 'Educator';
   const { notify, toastNode } = useToast();
 
-  const [section, setSection] = useState<AdminSectionId>('overview');
-  const [navOptions, setNavOptions] = useState<AdminNavigateOptions>({});
+  const [section, setSection] = useState<AdminSectionId>(currentSection || 'overview');
+  const [navOptions, setNavOptions] = useState<AdminNavigateOptions>(initialNavOptions || {});
   const [notes, setNotes] = useState<ChapterNotes[]>([]);
   const [doubts, setDoubts] = useState<Doubt[]>([]);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [studentStats, setStudentStats] = useState<{ total: number; byClass: Record<string, number> } | null>(null);
+
+  const activeSection = currentSection || section;
+
+  useEffect(() => {
+    if (currentSection) {
+      setSection(currentSection);
+    }
+  }, [currentSection]);
+
+  useEffect(() => {
+    if (initialNavOptions) {
+      setNavOptions((prev) => ({ ...prev, ...initialNavOptions }));
+    }
+  }, [initialNavOptions]);
 
   const tree = useMemo(() => buildAdminTree(allVideos, records), [allVideos, records]);
 
@@ -88,7 +112,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const navigate = (next: AdminSectionId, options: AdminNavigateOptions = {}) => {
     setNavOptions(options);
-    setSection(next);
+    if (onSectionChange) {
+      onSectionChange(next, options);
+    } else {
+      setSection(next);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -97,6 +125,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const navItems: { id: AdminSectionId; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: 'student-control', label: 'Student Dashboard Control', icon: <Sliders className="w-4 h-4" /> },
     { id: 'curriculum', label: 'Classes & Chapters', icon: <Layers className="w-4 h-4" /> },
     { id: 'videos', label: 'Videos', icon: <PlaySquare className="w-4 h-4" /> },
     { id: 'notes', label: 'Notes & Cheat Sheets', icon: <FileText className="w-4 h-4" /> },
@@ -107,8 +136,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   return (
     <div className="pb-32 lg:pb-12">
-      <div className="flex flex-col lg:flex-row gap-6">
-        <aside className="lg:w-60 shrink-0">
+      <div className={hideSidebar ? 'w-full' : 'flex flex-col lg:flex-row gap-6'}>
+        {!hideSidebar && (
+          <aside className="lg:w-60 shrink-0">
           <div className="lg:sticky lg:top-24 space-y-3">
             <div className="bg-slate-900 text-white rounded-2xl p-4 space-y-3">
               <div className="flex items-center gap-2">
@@ -122,10 +152,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               <button
                 onClick={onBackToApp}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer transition-colors"
+                title="View student curriculum and syllabus"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Back to app
+                <Eye className="w-3.5 h-3.5 text-purple-200" />
+                Student Syllabus View
               </button>
             </div>
 
@@ -161,9 +192,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </nav>
           </div>
         </aside>
+        )}
 
         <main className="flex-1 min-w-0">
-          {section === 'overview' && (
+          {activeSection === 'overview' && (
             <OverviewSection
               tree={tree}
               videos={allVideos}
@@ -174,7 +206,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onNavigate={navigate}
             />
           )}
-          {section === 'curriculum' && (
+          {activeSection === 'student-control' && (
+            <StudentControlSection
+              tree={tree}
+              videos={allVideos}
+              notify={notify}
+            />
+          )}
+          {activeSection === 'curriculum' && (
             <CurriculumSection
               tree={tree}
               notes={notes}
@@ -183,7 +222,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onEditNotes={(notesKey) => navigate('notes', { notesKey })}
             />
           )}
-          {section === 'videos' && (
+          {activeSection === 'videos' && (
             <VideosSection
               videos={allVideos}
               tree={tree}
@@ -192,31 +231,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onSelectVideo={onSelectVideo}
             />
           )}
-          {section === 'notes' && (
+          {activeSection === 'notes' && (
             <NotesSection
               tree={tree}
               notes={notes}
               reloadNotes={reloadNotes}
               notify={notify}
               adminName={adminName}
-              initialKey={navOptions.notesKey}
+              initialKey={navOptions.notesKey || initialNavOptions?.notesKey}
             />
           )}
-          {section === 'doubts' && (
+          {activeSection === 'doubts' && (
             <DoubtsSection
               doubts={doubts}
               reloadDoubts={reloadDoubts}
               notify={notify}
               adminName={adminName}
-              initialDoubtId={navOptions.doubtId}
+              initialDoubtId={navOptions.doubtId || initialNavOptions?.doubtId}
               videos={allVideos}
               onSelectVideo={onSelectVideo}
             />
           )}
-          {section === 'feedback' && (
+          {activeSection === 'feedback' && (
             <FeedbackSection feedbacks={feedbacks} reloadFeedback={reloadFeedback} notify={notify} />
           )}
-          {section === 'data' && (
+          {activeSection === 'data' && (
             <DataSection tree={tree} videoCount={allVideos.length} onRefreshCatalog={onRefreshCatalog} notify={notify} />
           )}
         </main>

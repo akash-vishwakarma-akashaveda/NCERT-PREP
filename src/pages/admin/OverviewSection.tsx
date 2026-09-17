@@ -1,9 +1,10 @@
 import React from 'react';
-import { MessageCircleQuestion, FileWarning, ArrowRight } from 'lucide-react';
+import { MessageCircleQuestion, FileWarning, ArrowRight, Sliders } from 'lucide-react';
 import { ChapterNotes, Doubt, Feedback, Video } from '../../types';
 import { AdminClassNode } from './adminTree';
 import { Card, SectionHeader, StatCard } from './adminUi';
 import type { AdminNavigateOptions, AdminSectionId } from './AdminDashboard';
+import { useDashboardConfig } from '../../hooks/useDashboardConfig';
 
 interface OverviewSectionProps {
   tree: AdminClassNode[];
@@ -41,6 +42,11 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
   const openDoubts = doubts.filter((d) => d.status === 'open').sort((a, b) => a.created_at - b.created_at);
   const newFeedback = feedbacks.filter((f) => f.status !== 'reviewed').length;
   const activeVideos = videos.filter((v) => v.isActive).length;
+  const { config } = useDashboardConfig();
+  const liveAnn = config?.announcement?.isActive ? config.announcement : null;
+  const activeSpotlightsCount = config
+    ? Object.values(config.spotlights).filter((s) => s.isActive).length
+    : 0;
 
   const missingNotes = visibleChapters
     .filter((ch) => ch.videoCount > 0 && !publishedKeys.has(ch.key))
@@ -77,6 +83,46 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
         />
         <StatCard label="New feedback" value={newFeedback} hint="Not yet reviewed" onClick={() => onNavigate('feedback')} />
       </div>
+
+      {/* Student Dashboard Direct Control Card */}
+      <Card className="p-4 bg-gradient-to-r from-[#EEF0FD]/80 via-white to-purple-50/60 border border-[#3B4FE0]/20">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-[#3B4FE0] text-white flex items-center justify-center">
+                <Sliders className="w-3.5 h-3.5" />
+              </span>
+              <h3 className="text-sm font-bold text-[#1E2233]">Student Dashboard Live Status</h3>
+              {liveAnn ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Broadcast Live
+                </span>
+              ) : (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                  No Active Broadcast
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-[#6B7280]">
+              {liveAnn
+                ? `"${liveAnn.title}" broadcasting to ${liveAnn.targetClass === 'all' ? 'all 12 classes' : `Class ${parseInt(liveAnn.targetClass, 10)}`}.`
+                : 'No announcement currently pinned.'}{' '}
+              {activeSpotlightsCount > 0
+                ? `${activeSpotlightsCount} teacher spotlight lessons active.`
+                : 'No daily spotlight lessons set.'}
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate('student-control')}
+            className="self-start md:self-auto flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-[#3B4FE0] text-white hover:bg-[#2F3FB5] shadow-sm transition-colors cursor-pointer shrink-0"
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            Manage Student Dashboard
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <Card className="p-5 space-y-3">

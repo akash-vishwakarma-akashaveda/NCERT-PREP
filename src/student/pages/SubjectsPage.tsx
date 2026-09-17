@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { CheckCircle2, Circle, FileText, Play, Bookmark, ChevronDown, BookOpen } from 'lucide-react';
 import { NotesTarget } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/ProgressContext';
 import { NotesService } from '../../services/content';
 import { RevisionNotesModal } from '../../components/app/RevisionNotesModal';
@@ -32,6 +33,12 @@ export const SubjectCard: React.FC<{ summary: SubjectSummary }> = ({ summary }) 
 
 export const SubjectsPage: React.FC = () => {
   const course = useCourse();
+  const { isAdmin } = useAuth();
+
+  if (isAdmin && !course.classSort) {
+    return <Navigate to="/browse" replace />;
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="My subjects" description={`${classLabel(course.classSort)} · ${course.subjects.length} subjects`} />

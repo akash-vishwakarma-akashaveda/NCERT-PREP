@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Bookmark, Play, Pause, RotateCcw, AlertCircle } from 'lucide-react';
 import { Video } from '../../types';
 import { useProgress } from '../../context/ProgressContext';
@@ -8,12 +8,17 @@ import { MyDoubtsPanel } from '../../components/doubts/MyDoubtsPanel';
 import { ReminderSettingsCard } from '../../components/profile/ReminderSettingsCard';
 import { ProfileSettings } from '../../components/profile/ProfileSettings';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { FocusMode } from '../useFocusTimer';
 import { useStudentContext } from '../StudentLayout';
 import { EmptyState, PageHeader, SubjectCover, btnPrimary, btnSecondary, card, lessonPath } from '../ui';
 
 export const DoubtsPage: React.FC = () => {
+  const { user, isAdmin } = useAuth();
+  const isUserAdmin = isAdmin || user?.role === 'admin' || user?.email === 'admin@ncertprep.edu';
+  if (isUserAdmin) {
+    return <Navigate to="/app?tab=doubts" replace />;
+  }
+
   const { videoMap } = useCatalogContext();
   const navigate = useNavigate();
   return (

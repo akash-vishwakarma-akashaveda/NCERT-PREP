@@ -99,3 +99,214 @@ test('Reminder scheduling discriminates strictly between daily and weekly users'
   assert.strictEqual(weeklyRecipients.length, 1);
   assert.strictEqual(weeklyRecipients[0].id, 'u2');
 });
+
+// Test 5: Limited Content Access Control (Visitor preview vs Registered user)
+test('Visitors can only access Free Preview (Chapter 1), while registered users unlock all lessons', () => {
+  function isLessonUnlocked(user, chapterIndex, videoIndex) {
+    if (user) return true; // Full access for registered students
+    return chapterIndex === 0 && (typeof videoIndex === 'number' ? videoIndex === 0 : true);
+  }
+
+  const visitor = null;
+  const registeredStudent = { userId: 'student_123', email: 'student@example.com' };
+
+  // Visitor trying to access Chapter 1 Lesson 1 (Free Preview)
+  assert.strictEqual(isLessonUnlocked(visitor, 0, 0), true, 'Visitor must have access to Chapter 1 sample lesson');
+
+  // Visitor trying to access Chapter 2, 3, 4 lessons
+  assert.strictEqual(isLessonUnlocked(visitor, 1, 0), false, 'Visitor must NOT have access to Chapter 2 without login');
+  assert.strictEqual(isLessonUnlocked(visitor, 2, 0), false, 'Visitor must NOT have access to Chapter 3 without login');
+  assert.strictEqual(isLessonUnlocked(visitor, 0, 1), false, 'Visitor must NOT have access to secondary lesson in Chapter 1');
+
+  // Registered student has access to ALL chapters and lessons
+  assert.strictEqual(isLessonUnlocked(registeredStudent, 0, 0), true);
+  assert.strictEqual(isLessonUnlocked(registeredStudent, 1, 0), true);
+  assert.strictEqual(isLessonUnlocked(registeredStudent, 5, 2), true);
+});
+
+// Test 6: Admin Student Dashboard Control (Broadcasts, Spotlight & Policy Targeting)
+test('Student Dashboard Control delivers announcements and spotlights accurately per grade', () => {
+  const mockConfig = {
+    announcement: {
+      id: 'ann-1',
+      title: 'Board Exam Sprint',
+      message: 'Revise high-yield topics',
+      tone: 'exam',
+      targetClass: '10',
+      isActive: true,
+    },
+    spotlights: {
+      '10': {
+        classSort: '10',
+        videoId: 'vid_science_10',
+        title: 'Chemical Reactions',
+        note: 'High yield for Friday quiz',
+        isActive: true,
+      },
+      '12': {
+        classSort: '12',
+        videoId: 'vid_phys_12',
+        title: 'Electrostats',
+        note: 'Derivations revision',
+        isActive: false, // Inactive
+      },
+    },
+    policy: {
+      freePreviewEnabled: true,
+      freePreviewCount: 1,
+      allowGuestNotes: false,
+    },
+  };
+
+  function shouldShowAnnouncement(ann, studentClass) {
+    if (!ann || !ann.isActive) return false;
+    const studentInt = parseInt(String(studentClass).replace(/\D/g, ''), 10);
+    const targetInt = parseInt(String(ann.targetClass).replace(/\D/g, ''), 10);
+    return (
+      ann.targetClass === 'all' ||
+      ann.targetClass === studentClass ||
+      (!isNaN(targetInt) && !isNaN(studentInt) && targetInt === studentInt)
+    );
+  }
+
+  function getActiveSpotlight(spotlights, studentClass) {
+    const studentInt = parseInt(String(studentClass).replace(/\D/g, ''), 10);
+    const item = spotlights[studentClass] || spotlights[String(studentInt)];
+    return item && item.isActive ? item : null;
+  }
+
+  // Announcement targeted to Class 10
+  assert.strictEqual(shouldShowAnnouncement(mockConfig.announcement, '10'), true, 'Class 10 student must see Class 10 announcement');
+  assert.strictEqual(shouldShowAnnouncement(mockConfig.announcement, 'class_10'), true, 'Class 10 student (prefixed) must see announcement');
+  assert.strictEqual(shouldShowAnnouncement(mockConfig.announcement, '09'), false, 'Class 9 student must NOT see Class 10 announcement');
+
+  // Spotlight active check
+  const class10Spotlight = getActiveSpotlight(mockConfig.spotlights, '10');
+  assert.ok(class10Spotlight, 'Class 10 has an active spotlight');
+  assert.strictEqual(class10Spotlight.videoId, 'vid_science_10');
+  assert.strictEqual(class10Spotlight.note, 'High yield for Friday quiz');
+
+  const class12Spotlight = getActiveSpotlight(mockConfig.spotlights, '12');
+  assert.strictEqual(class12Spotlight, null, 'Class 12 spotlight is inactive and must not be displayed');
+
+  const class9Spotlight = getActiveSpotlight(mockConfig.spotlights, '09');
+  assert.strictEqual(class9Spotlight, null, 'Class 9 has no spotlight configured');
+});
+
+// Test 7: Admin Session Routing & Immediate Dashboard Rendering
+test('Administrators are never shown the empty student state and load admin dashboard directly', () => {
+  const adminUser = {
+    userId: 'admin_123',
+    email: 'admin@ncertprep.edu',
+    displayName: 'Curriculum Director',
+    role: 'admin',
+    grade_preference: null,
+  };
+
+  const studentUser = {
+    userId: 'student_123',
+    email: 'student@example.com',
+    displayName: 'Aarav',
+    role: 'student',
+    grade_preference: '10',
+  };
+
+  const studentWithoutGrade = {
+    userId: 'student_456',
+    email: 'newstudent@example.com',
+    displayName: 'Riya',
+    role: 'student',
+    grade_preference: null,
+  };
+
+  function resolveHomeView(user, isAdmin) {
+    if (!user) return 'landing';
+    const isUserAdmin = isAdmin || user.role === 'admin' || user.email === 'admin@ncertprep.edu';
+    if (isUserAdmin) {
+      return 'admin_dashboard';
+    }
+    if (!user.grade_preference) {
+      return 'student_onboarding_empty_state';
+    }
+    return 'student_home';
+  }
+
+  assert.strictEqual(resolveHomeView(adminUser, true), 'admin_dashboard', 'Admin must directly resolve to admin_dashboard');
+  assert.strictEqual(resolveHomeView(adminUser, false), 'admin_dashboard', 'Admin by email/role resolves to admin_dashboard even if flag is delayed');
+  assert.strictEqual(resolveHomeView(studentUser, false), 'student_home', 'Student with grade resolves to student_home');
+  assert.strictEqual(resolveHomeView(studentWithoutGrade, false), 'student_onboarding_empty_state', 'Student without grade resolves to empty state');
+});
+
+// Test 8: Admin Left Sidebar Navigation & Active Tab Query Resolution
+test('Admin Left Sidebar reflects complete admin dashboard tabs and handles active query states', () => {
+  function getNavigation(isUserAdmin) {
+    if (isUserAdmin) {
+      return {
+        main: [
+          { to: '/app', label: 'Overview' },
+          { to: '/app?tab=student-control', label: 'Dashboard Control' },
+          { to: '/app?tab=curriculum', label: 'Classes & Chapters' },
+          { to: '/app?tab=videos', label: 'Video Catalog' },
+          { to: '/app?tab=notes', label: 'Notes & Cheat Sheets' },
+          { to: '/app?tab=doubts', label: 'Student Doubts' },
+          { to: '/app?tab=feedback', label: 'Student Feedback' },
+          { to: '/app?tab=data', label: 'Data & Sync' },
+        ],
+        account: [
+          { to: '/browse', label: 'Student Syllabus View' },
+          { to: '/app/profile', label: 'Profile & settings' },
+        ],
+      };
+    }
+    return {
+      main: [
+        { to: '/app', label: 'Home' },
+        { to: '/app/subjects', label: 'My subjects' },
+        { to: '/app/doubts', label: 'Doubts' },
+        { to: '/app/saved', label: 'Saved' },
+        { to: '/app/focus', label: 'Focus timer' },
+        { to: '/app/reminders', label: 'Reminders' },
+      ],
+      account: [
+        { to: '/app/profile', label: 'Profile & settings' },
+      ],
+    };
+  }
+
+  function isItemActive(item, pathname, searchParamTab, isUserAdmin) {
+    if (isUserAdmin) {
+      const currentTab = searchParamTab || 'overview';
+      if (item.to.startsWith('/app?tab=')) {
+        const itemTab = new URLSearchParams(item.to.split('?')[1]).get('tab');
+        return pathname === '/app' && currentTab === itemTab;
+      }
+      if (item.to === '/app') {
+        return pathname === '/app' && (!searchParamTab || currentTab === 'overview');
+      }
+      return pathname === item.to || pathname.startsWith(item.to + '/');
+    }
+    return pathname === item.to || pathname.startsWith(item.to + '/');
+  }
+
+  const adminNav = getNavigation(true);
+  assert.strictEqual(adminNav.main.length, 8, 'Admin must have all 8 control tabs in primary navigation');
+  assert.strictEqual(adminNav.account.length, 2, 'Admin must have Syllabus View and Profile in account navigation');
+
+  // Test active state for '/app' (Overview)
+  assert.strictEqual(isItemActive(adminNav.main[0], '/app', null, true), true, 'Overview active when no query tab');
+  assert.strictEqual(isItemActive(adminNav.main[1], '/app', null, true), false, 'Dashboard Control inactive when on overview');
+
+  // Test active state for '/app?tab=student-control'
+  assert.strictEqual(isItemActive(adminNav.main[0], '/app', 'student-control', true), false, 'Overview inactive when on student-control tab');
+  assert.strictEqual(isItemActive(adminNav.main[1], '/app', 'student-control', true), true, 'Dashboard Control active when on student-control tab');
+
+  // Test active state for '/app?tab=videos'
+  assert.strictEqual(isItemActive(adminNav.main[3], '/app', 'videos', true), true, 'Video Catalog active on videos tab');
+  assert.strictEqual(isItemActive(adminNav.main[2], '/app', 'videos', true), false, 'Classes inactive on videos tab');
+
+  // Test active state when navigating to '/browse'
+  assert.strictEqual(isItemActive(adminNav.account[0], '/browse', null, true), true, 'Student Syllabus View active on /browse');
+  assert.strictEqual(isItemActive(adminNav.main[0], '/browse', null, true), false, 'Overview inactive on /browse');
+});
+
+

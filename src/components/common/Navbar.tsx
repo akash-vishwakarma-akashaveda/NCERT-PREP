@@ -1,8 +1,8 @@
 import React from 'react';
-import { Search, LogIn } from 'lucide-react';
+import { Search, LogIn, LayoutDashboard, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-type NavTab = 'home' | 'browse' | 'privacy';
+type NavTab = 'home' | 'browse' | 'privacy' | 'profile';
 
 interface NavbarProps {
   currentTab: NavTab;
@@ -36,7 +36,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSearch,
   showSearch = true,
 }) => {
-  const { setAuthModalOpen } = useAuth();
+  const { user, isAdmin, setAuthModalOpen } = useAuth();
+  const isUserAdmin = isAdmin || user?.role === 'admin' || user?.email === 'admin@ncertprep.edu';
 
   const goToSection = (id: string) => {
     if (currentTab !== 'home') onNavigate('home');
@@ -74,20 +75,33 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Search className="w-5 h-5 text-[#3B4FE0]" />
             </button>
           )}
-          <button
-            onClick={() => setAuthModalOpen(true)}
-            className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold text-[#1E2233] hover:bg-[#F5F6FA] rounded-xl cursor-pointer"
-          >
-            Sign in
-          </button>
-          <button
-            onClick={() => setAuthModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-xl shadow-[0_6px_16px_-8px_rgba(59,79,224,0.8)] transition-colors cursor-pointer"
-          >
-            <LogIn className="w-4 h-4 sm:hidden" />
-            <span className="sm:hidden">Sign in</span>
-            <span className="hidden sm:inline">Get started free</span>
-          </button>
+
+          {user ? (
+            <button
+              onClick={() => onNavigate('profile')}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-xl shadow-[0_6px_16px_-8px_rgba(59,79,224,0.8)] transition-colors cursor-pointer"
+            >
+              {isUserAdmin ? <Shield className="w-4 h-4 text-purple-200" /> : <LayoutDashboard className="w-4 h-4" />}
+              <span>{isUserAdmin ? 'Admin Console' : 'Go to App'}</span>
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => setAuthModalOpen(true)}
+                className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold text-[#1E2233] hover:bg-[#F5F6FA] rounded-xl cursor-pointer"
+              >
+                Sign in
+              </button>
+              <button
+                onClick={() => setAuthModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-xl shadow-[0_6px_16px_-8px_rgba(59,79,224,0.8)] transition-colors cursor-pointer"
+              >
+                <LogIn className="w-4 h-4 sm:hidden" />
+                <span className="sm:hidden">Sign in</span>
+                <span className="hidden sm:inline">Get started free</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
     </header>

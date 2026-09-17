@@ -13,7 +13,6 @@ import { RevisionNotesModal } from './components/app/RevisionNotesModal';
 import { LandingPage } from './pages/LandingPage';
 import { BrowsePage } from './pages/BrowsePage';
 import { PrivacyPage } from './pages/PrivacyPage';
-import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { StudentLayout } from './student/StudentLayout';
 import { HomePage } from './student/pages/HomePage';
 import { SubjectDetailPage, SubjectsPage } from './student/pages/SubjectsPage';
@@ -21,7 +20,7 @@ import { LessonPage } from './student/pages/LessonPage';
 import { DoubtsPage, FocusPage, ProfilePage, RemindersPage, SavedPage } from './student/pages/AccountPages';
 
 type PublicTab = 'home' | 'browse' | 'profile' | 'privacy';
-const PUBLIC_PATHS: Partial<Record<PublicTab, string>> = { home: '/', browse: '/browse', privacy: '/privacy' };
+const PUBLIC_PATHS: Partial<Record<PublicTab, string>> = { home: '/', browse: '/browse', privacy: '/privacy', profile: '/app' };
 
 // Visitor pages: landing, syllabus explorer, privacy, public lesson view.
 const PublicLayout: React.FC = () => {
@@ -31,8 +30,8 @@ const PublicLayout: React.FC = () => {
   const { pathname } = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // Signed-in users live in /app; privacy stays readable for everyone.
-  if (!loading && user && pathname !== '/privacy') {
+  // Signed-in users live in /app; privacy and syllabus browser stay readable for all.
+  if (!loading && user && pathname !== '/privacy' && pathname !== '/browse') {
     const lesson = pathname.match(/^\/watch\/(.+)$/);
     return <Navigate to={lesson ? `/app/lesson/${lesson[1]}` : '/app'} replace />;
   }
@@ -104,23 +103,9 @@ const BrowseRoute: React.FC = () => {
 
 const AdminRoute: React.FC = () => {
   const { user, isAdmin, loading } = useAuth();
-  const { allVideos, records, refreshCatalog } = useCatalogContext();
-  const navigate = useNavigate();
   if (loading && !user) return null;
   if (!isAdmin) return <Navigate to={user ? '/app' : '/'} replace />;
-  return (
-    <div className="min-h-screen bg-[#F5F6FA] text-[#1E2233]">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <AdminDashboard
-          allVideos={allVideos}
-          records={records}
-          onRefreshCatalog={refreshCatalog}
-          onBackToApp={() => navigate('/app')}
-          onSelectVideo={(v) => navigate(`/app/lesson/${encodeURIComponent(v.youtube_id)}`)}
-        />
-      </div>
-    </div>
-  );
+  return <Navigate to="/app" replace />;
 };
 
 const PrivacyRoute: React.FC = () => {
