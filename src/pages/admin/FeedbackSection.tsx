@@ -33,7 +33,7 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({ feedbacks, rel
         description="One-way comments students leave under lessons (max 5 per hour). Use Doubts for questions that need a reply."
         actions={
           <>
-            <label className="flex items-center gap-2 text-xs font-semibold text-[#1E2233] cursor-pointer">
+            <label className="flex items-center gap-2 text-xs font-bold text-[#1E2233] cursor-pointer">
               <input type="checkbox" checked={showReviewed} onChange={(e) => setShowReviewed(e.target.checked)} />
               Show reviewed
             </label>
@@ -61,22 +61,22 @@ export const FeedbackSection: React.FC<FeedbackSectionProps> = ({ feedbacks, rel
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <span
-                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
-                        fb.status === 'reviewed' ? 'bg-slate-200 text-slate-700' : 'bg-blue-100 text-blue-800'
+                      className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                        fb.status === 'reviewed' ? 'bg-slate-200 text-slate-700' : 'bg-[#EEF0FE] text-[#2A3BB8]'
                       }`}
                     >
                       {fb.status || 'new'}
                     </span>
-                    <span className="text-xs font-bold text-[#1E2233] truncate">{fb.videoTitle || fb.youtube_id}</span>
+                    <span className="text-xs font-extrabold text-[#1E2233] truncate">{fb.videoTitle || fb.youtube_id}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-[11px] text-[#6B7280]">{new Date(Number(fb.created_at)).toLocaleString()}</span>
-                    <button onClick={() => toggle(fb)} className="text-xs font-bold text-[#3B4FE0] hover:underline cursor-pointer">
+                    <button onClick={() => toggle(fb)} className="text-xs font-extrabold text-[#3B4FE0] hover:underline cursor-pointer">
                       {fb.status === 'reviewed' ? 'Mark new' : 'Mark reviewed'}
                     </button>
                   </div>
                 </div>
-                <p className="text-sm text-[#1E2233] bg-[#F5F6FA] p-3 rounded-xl whitespace-pre-line">{fb.message}</p>
+                <p className="text-sm text-[#1E2233] bg-[#F5F6FA] p-3 rounded-[14px] whitespace-pre-line">{fb.message}</p>
                 <p className="text-[11px] text-[#6B7280]">From {fb.userEmail || fb.userId}</p>
               </li>
             ))}

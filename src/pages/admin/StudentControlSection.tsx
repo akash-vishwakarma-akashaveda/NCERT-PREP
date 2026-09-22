@@ -198,10 +198,11 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
 
   // Tone badge styles
   const toneStyles = {
-    exam: 'bg-gradient-to-r from-rose-500/10 via-purple-500/10 to-indigo-500/10 border-rose-200 text-rose-950',
-    info: 'bg-indigo-50/80 border-indigo-200 text-indigo-950',
-    success: 'bg-emerald-50/80 border-emerald-200 text-emerald-950',
-    warning: 'bg-amber-50/80 border-amber-200 text-amber-950',
+    // Matches the student banner (HomePage TONES): navy for Class 6–12; Class 1–5 get a sunny note instead.
+    exam: 'bg-[#1E2233] border-[#2C3350] text-white',
+    info: 'bg-[#EEF0FE]/80 border-[#C7CDF8] text-indigo-950',
+    success: 'bg-[#E7F7F1]/80 border-[#A9E6D3] text-emerald-950',
+    warning: 'bg-[#FFF6E2]/80 border-[#FFD97A] text-[#5E3D0C]',
   }[annTone];
 
   return (
@@ -236,10 +237,10 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
             <button
               key={tab.id}
               onClick={() => setSubTab(tab.id as SubTab)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-[14px] text-xs font-extrabold transition-all whitespace-nowrap cursor-pointer ${
                 active
-                  ? 'bg-[#3B4FE0] text-white shadow-xs'
-                  : 'bg-white text-[#6B7280] hover:text-[#1E2233] border border-[#E3E5EC]'
+                  ? 'bg-[#3B4FE0] text-white shadow-[0_4px_0_#EDEFF6]'
+                  : 'bg-white text-[#6B7280] hover:text-[#1E2233] border-2 border-[#E3E5EC]'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -255,10 +256,10 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
           <Card className="p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-[#E3E5EC] pb-3">
               <div>
-                <h3 className="text-base font-bold text-[#1E2233]">Broadcast Announcement</h3>
+                <h3 className="text-base font-extrabold text-[#1E2233]">Broadcast Announcement</h3>
                 <p className="text-xs text-[#6B7280]">Display a prominent announcement banner on student dashboards.</p>
               </div>
-              <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+              <label className="flex items-center gap-2 text-xs font-extrabold cursor-pointer">
                 <input
                   type="checkbox"
                   checked={annActive}
@@ -271,7 +272,7 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#1E2233] mb-1">Headline</label>
+                <label className="block text-xs font-extrabold text-[#1E2233] mb-1">Headline</label>
                 <input
                   type="text"
                   value={annTitle}
@@ -282,7 +283,7 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#1E2233] mb-1">Message</label>
+                <label className="block text-xs font-extrabold text-[#1E2233] mb-1">Message</label>
                 <textarea
                   rows={3}
                   value={annMessage}
@@ -294,7 +295,7 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#1E2233] mb-1">Alert Style / Tone</label>
+                  <label className="block text-xs font-extrabold text-[#1E2233] mb-1">Alert Style / Tone</label>
                   <select
                     value={annTone}
                     onChange={(e) => setAnnTone(e.target.value as any)}
@@ -308,7 +309,7 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#1E2233] mb-1">Target Audience</label>
+                  <label className="block text-xs font-extrabold text-[#1E2233] mb-1">Target Audience</label>
                   <select
                     value={annTarget}
                     onChange={(e) => setAnnTarget(e.target.value)}
@@ -326,7 +327,7 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#1E2233] mb-1">Action Button Text (Optional)</label>
+                  <label className="block text-xs font-extrabold text-[#1E2233] mb-1">Action Button Text (Optional)</label>
                   <input
                     type="text"
                     value={annActionLabel}
@@ -336,7 +337,7 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#1E2233] mb-1">Action Button Link</label>
+                  <label className="block text-xs font-extrabold text-[#1E2233] mb-1">Action Button Link</label>
                   <input
                     type="text"
                     value={annActionUrl}
@@ -360,10 +361,10 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
           {/* Interactive Live Preview Box */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#6B7280]">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-[#6B7280]">
                 Live Student Dashboard Preview
               </span>
-              <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+              <span className="text-[11px] font-bold text-[#0B7A67] bg-[#E7F7F1] px-2 py-0.5 rounded-md">
                 Live Rendering
               </span>
             </div>
@@ -371,18 +372,19 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
             <Card className="p-6 bg-[#F8F9FD] border-2 border-dashed border-[#CBD5E1] space-y-4">
               <p className="text-xs text-[#6B7280]">
                 This is how the banner appears right below the greeting on the student dashboard:
+                {annTone === 'exam' && ' Class 1–5 students see exam notices as a friendly yellow note instead.'}
               </p>
 
               {annActive ? (
-                <div className={`p-4 rounded-2xl border shadow-2xs space-y-2 ${toneStyles}`}>
+                <div className={`p-4 rounded-[22px] border shadow-[0_4px_0_#EDEFF6] space-y-2 ${toneStyles}`}>
                   <div className="flex items-start gap-3">
-                    <span className="w-8 h-8 rounded-xl bg-white/80 shadow-2xs flex items-center justify-center shrink-0">
+                    <span className="w-8 h-8 rounded-[14px] bg-white/80 shadow-[0_4px_0_#EDEFF6] flex items-center justify-center shrink-0">
                       <Megaphone className="w-4 h-4 text-[#3B4FE0]" />
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold">{annTitle || 'Announcement Title'}</p>
-                        <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.2 rounded-md bg-black/5">
+                        <p className="text-sm font-extrabold">{annTitle || 'Announcement Title'}</p>
+                        <span className={`text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded-md ${annTone === 'exam' ? 'bg-white/15' : 'bg-black/5'}`}>
                           {annTarget === 'all' ? 'All Classes' : classLabel(annTarget)}
                         </span>
                       </div>
@@ -393,14 +395,14 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
                   </div>
                   {annActionLabel && (
                     <div className="pl-11 pt-1">
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-[#3B4FE0] bg-white px-3 py-1.5 rounded-lg border border-indigo-200 shadow-2xs">
+                      <span className="inline-flex items-center gap-1 text-xs font-extrabold text-[#3B4FE0] bg-white px-3 py-1.5 rounded-xl border border-[#C7CDF8] shadow-[0_4px_0_#EDEFF6]">
                         {annActionLabel} <ArrowRight className="w-3 h-3" />
                       </span>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="p-6 text-center text-xs text-[#6B7280] bg-white rounded-2xl border border-[#E3E5EC]">
+                <div className="p-6 text-center text-xs text-[#6B7280] bg-white rounded-[22px] border-2 border-[#E3E5EC]">
                   Announcement is currently <strong>Inactive / Hidden</strong>. Turn on the toggle to display it.
                 </div>
               )}
@@ -415,12 +417,12 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
           <Card className="p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-[#E3E5EC] pb-3">
               <div>
-                <h3 className="text-base font-bold text-[#1E2233]">Spotlight / Pinned Lesson</h3>
+                <h3 className="text-base font-extrabold text-[#1E2233]">Spotlight / Pinned Lesson</h3>
                 <p className="text-xs text-[#6B7280]">
                   Feature a high-yield revision lesson for students of a specific class.
                 </p>
               </div>
-              <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+              <label className="flex items-center gap-2 text-xs font-extrabold cursor-pointer">
                 <input
                   type="checkbox"
                   checked={spotlightActive}
@@ -433,7 +435,7 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#1E2233] mb-1">Select Grade</label>
+                <label className="block text-xs font-extrabold text-[#1E2233] mb-1">Select Grade</label>
                 <select
                   value={spotlightClass}
                   onChange={(e) => setSpotlightClass(e.target.value)}
@@ -448,7 +450,7 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#1E2233] mb-1">
+                <label className="block text-xs font-extrabold text-[#1E2233] mb-1">
                   Choose Lesson to Feature ({classVideos.length} available)
                 </label>
                 <select
@@ -465,7 +467,7 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#1E2233] mb-1">
+                <label className="block text-xs font-extrabold text-[#1E2233] mb-1">
                   Teacher Guidance / Motivation Note
                 </label>
                 <textarea
@@ -489,37 +491,37 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
 
           {/* Spotlight Preview Box */}
           <div className="space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#6B7280]">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-[#6B7280]">
               Spotlight Card Preview (Student Home)
             </span>
 
-            <Card className="p-5 bg-gradient-to-br from-[#EEEDFE]/60 to-white border border-[#D7D4FC] space-y-4">
+            <Card className="p-5 bg-gradient-to-br from-[#EEEDFE]/60 to-white border-2 border-[#D7D4FC] space-y-4">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#3B4FE0] text-white shadow-2xs">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-[#3B4FE0] text-white shadow-[0_4px_0_#EDEFF6]">
                   <Star className="w-3.5 h-3.5 fill-white text-white" />
                   Educator&apos;s Pick for Today
                 </span>
-                <span className="text-xs font-semibold text-[#6B7280]">
+                <span className="text-xs font-bold text-[#6B7280]">
                   {classLabel(spotlightClass)}
                 </span>
               </div>
 
               {selectedSpotlightVideo ? (
                 <div className="space-y-2">
-                  <p className="text-xs font-bold text-[#3B4FE0]">
+                  <p className="text-xs font-extrabold text-[#3B4FE0]">
                     {selectedSpotlightVideo.subject} · {selectedSpotlightVideo.chapter_name}
                   </p>
                   <h4 className="text-base font-extrabold text-[#1E2233] leading-snug">
                     {selectedSpotlightVideo.video_title}
                   </h4>
                   {spotlightNote && (
-                    <p className="text-xs text-[#04342C] bg-[#E1F5EE] px-3 py-2 rounded-xl border border-[#BCE8DC] flex items-center gap-1.5">
-                      <Pin className="w-3.5 h-3.5 text-emerald-800 shrink-0" />
+                    <p className="text-xs text-[#04342C] bg-[#E1F5EE] px-3 py-2 rounded-[14px] border-2 border-[#BCE8DC] flex items-center gap-1.5">
+                      <Pin className="w-3.5 h-3.5 text-[#0B7A67] shrink-0" />
                       <span><strong>Note:</strong> {spotlightNote}</span>
                     </p>
                   )}
                   <div className="pt-2">
-                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#3B4FE0] shadow-xs">
+                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-[14px] text-xs font-extrabold text-white bg-[#3B4FE0] shadow-[0_4px_0_#EDEFF6]">
                       <Play className="w-3.5 h-3.5 fill-white" /> Start Spotlight Lesson
                     </span>
                   </div>
@@ -537,16 +539,16 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
         <div className="max-w-2xl space-y-6">
           <Card className="p-6 space-y-5">
             <div className="border-b border-[#E3E5EC] pb-3">
-              <h3 className="text-base font-bold text-[#1E2233]">Content Access & Gating Policy</h3>
+              <h3 className="text-base font-extrabold text-[#1E2233]">Content Access & Gating Policy</h3>
               <p className="text-xs text-[#6B7280]">
                 Control what visitors can preview before being prompted to sign in with a free student account.
               </p>
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-[#F5F6FA] rounded-2xl border border-[#E3E5EC]">
+              <div className="flex items-center justify-between p-4 bg-[#F5F6FA] rounded-[22px] border-2 border-[#E3E5EC]">
                 <div>
-                  <p className="text-sm font-bold text-[#1E2233]">Free Sample Preview</p>
+                  <p className="text-sm font-extrabold text-[#1E2233]">Free Sample Preview</p>
                   <p className="text-xs text-[#6B7280]">
                     Allow visitors to watch sample lessons to evaluate revision quality without barriers.
                   </p>
@@ -559,29 +561,39 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
                 />
               </div>
 
-              <div className="p-4 bg-[#F5F6FA] rounded-2xl border border-[#E3E5EC] space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-[#1E2233]">Free Preview Chapters per Subject</p>
-                  <span className="text-xs font-bold text-[#3B4FE0] bg-white px-2.5 py-1 rounded-md border border-[#E3E5EC]">
-                    Chapter 1 only
-                  </span>
+              <div className="p-4 bg-[#F5F6FA] rounded-[22px] border-2 border-[#E3E5EC] space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="preview-count" className="text-sm font-extrabold text-[#1E2233]">Free preview chapters per subject</label>
+                  <select
+                    id="preview-count"
+                    value={previewCount}
+                    disabled={!previewEnabled}
+                    onChange={(e) => setPreviewCount(Number(e.target.value))}
+                    className="px-3 py-1.5 rounded-xl border-2 border-[#E3E5EC] bg-white text-xs font-extrabold text-[#3B4FE0]"
+                  >
+                    {[1, 2, 3, 5].map((n) => (
+                      <option key={n} value={n}>
+                        {n === 1 ? 'Chapter 1 only' : `Chapters 1–${n}`}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <p className="text-xs text-[#6B7280]">
-                  Visitors can watch Chapter 1 for free. Chapters 2..N require signing in to access.
+                  Visitors can play the first lesson of these chapters without an account. Everything else asks them to sign up.
                 </p>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-[#F5F6FA] rounded-2xl border border-[#E3E5EC]">
+              <div className="flex items-center justify-between p-4 bg-[#F5F6FA] rounded-[22px] border-2 border-[#E3E5EC]">
                 <div>
-                  <p className="text-sm font-bold text-[#1E2233]">Lock Formula Cheat Sheets & Notes</p>
+                  <p className="text-sm font-extrabold text-[#1E2233]">Visitors can read notes of preview lessons</p>
                   <p className="text-xs text-[#6B7280]">
-                    Require student registration to download and view formula cheat sheets beyond Chapter 1.
+                    Off: notes and cheat sheets need a free account. Doubts always need a signed-in, consented account.
                   </p>
                 </div>
                 <input
                   type="checkbox"
-                  checked={!guestNotes}
-                  onChange={(e) => setGuestNotes(!e.target.checked)}
+                  checked={guestNotes}
+                  onChange={(e) => setGuestNotes(e.target.checked)}
                   className="rounded text-[#3B4FE0] focus:ring-[#3B4FE0]"
                 />
               </div>
@@ -597,14 +609,14 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
       {/* 4. LIVE DASHBOARD SIMULATOR TAB */}
       {subTab === 'simulator' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#E3E5EC]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-[22px] border-2 border-[#E3E5EC]">
             <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-xl bg-[#3B4FE0]/10 text-[#3B4FE0] flex items-center justify-center">
+              <span className="w-8 h-8 rounded-[14px] bg-[#3B4FE0]/10 text-[#3B4FE0] flex items-center justify-center">
                 <Eye className="w-4 h-4" />
               </span>
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-[#6B7280]">Simulation Mode</p>
-                <p className="text-sm font-bold text-[#1E2233]">Viewing Student Dashboard for:</p>
+                <p className="text-xs font-extrabold uppercase tracking-wider text-[#6B7280]">Simulation Mode</p>
+                <p className="text-sm font-extrabold text-[#1E2233]">Viewing Student Dashboard for:</p>
               </div>
             </div>
 
@@ -612,7 +624,7 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
               <select
                 value={simClass}
                 onChange={(e) => setSimClass(e.target.value)}
-                className="px-3 py-1.5 text-xs font-bold rounded-xl border border-[#E3E5EC] bg-white text-[#1E2233]"
+                className="px-3 py-1.5 text-xs font-extrabold rounded-[14px] border-2 border-[#E3E5EC] bg-white text-[#1E2233]"
               >
                 {tree.map((c) => (
                   <option key={c.class_sort} value={c.class_sort}>
@@ -623,7 +635,7 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
 
               <button
                 onClick={() => notify(`Refreshed live simulator for ${classLabel(simClass)}!`, 'success')}
-                className="p-2 rounded-xl border border-[#E3E5EC] hover:bg-[#F5F6FA] text-[#6B7280] cursor-pointer"
+                className="p-2 rounded-[14px] border-2 border-[#E3E5EC] hover:bg-[#F5F6FA] text-[#6B7280] cursor-pointer"
                 title="Refresh Simulator"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -632,13 +644,13 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
           </div>
 
           {/* Simulated Student Workspace Frame */}
-          <div className="border-4 border-slate-200 rounded-3xl overflow-hidden bg-[#F5F6FA] p-4 sm:p-8 space-y-6 shadow-inner">
+          <div className="border-4 border-slate-200 rounded-[28px] overflow-hidden bg-[#F5F6FA] p-4 sm:p-8 space-y-6 shadow-inner">
             <div className="flex items-center justify-between border-b border-[#E3E5EC] pb-3">
               <div>
                 <span className="text-xs text-[#6B7280]">{classLabel(simClass)} · Student Workspace</span>
-                <h3 className="text-xl font-bold text-[#1E2233]">Good afternoon, Student</h3>
+                <h3 className="text-xl font-extrabold text-[#1E2233]">Good afternoon, Student</h3>
               </div>
-              <span className="text-xs font-bold text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full flex items-center gap-1">
+              <span className="text-xs font-extrabold text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full flex items-center gap-1">
                 <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500" /> 3-Day Streak
               </span>
             </div>
@@ -646,11 +658,11 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
             {/* Simulated Live Announcement */}
             {config?.announcement?.isActive &&
               (config.announcement.targetClass === 'all' || config.announcement.targetClass === simClass) && (
-                <div className={`p-4 rounded-2xl border shadow-2xs space-y-2 ${toneStyles}`}>
+                <div className={`p-4 rounded-[22px] border shadow-[0_4px_0_#EDEFF6] space-y-2 ${toneStyles}`}>
                   <div className="flex items-start gap-3">
                     <Megaphone className="w-5 h-5 text-[#3B4FE0] shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-bold">{config.announcement.title}</p>
+                      <p className="text-sm font-extrabold">{config.announcement.title}</p>
                       <p className="text-xs opacity-90 mt-0.5">{config.announcement.message}</p>
                     </div>
                   </div>
@@ -659,17 +671,17 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
 
             {/* Simulated Spotlight Lesson */}
             {config?.spotlights[simClass]?.isActive && (
-              <div className="p-5 rounded-2xl bg-white border border-[#D7D4FC] shadow-2xs space-y-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold bg-[#3B4FE0] text-white">
+              <div className="p-5 rounded-[22px] bg-white border-2 border-[#D7D4FC] shadow-[0_4px_0_#EDEFF6] space-y-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-extrabold bg-[#3B4FE0] text-white">
                   <Star className="w-3 h-3 fill-white text-white" /> Teacher&apos;s Spotlight for Today
                 </span>
-                <p className="text-xs text-[#3B4FE0] font-bold mt-1">
+                <p className="text-xs text-[#3B4FE0] font-extrabold mt-1">
                   {config.spotlights[simClass].subject} · {config.spotlights[simClass].chapterName}
                 </p>
-                <h4 className="text-base font-bold text-[#1E2233]">{config.spotlights[simClass].title}</h4>
+                <h4 className="text-base font-extrabold text-[#1E2233]">{config.spotlights[simClass].title}</h4>
                 {config.spotlights[simClass].note && (
-                  <p className="text-xs text-[#04342C] bg-[#E1F5EE] p-2 rounded-xl flex items-center gap-1.5">
-                    <Pin className="w-3.5 h-3.5 text-emerald-800 shrink-0" />
+                  <p className="text-xs text-[#04342C] bg-[#E1F5EE] p-2 rounded-[14px] flex items-center gap-1.5">
+                    <Pin className="w-3.5 h-3.5 text-[#0B7A67] shrink-0" />
                     <span>{config.spotlights[simClass].note}</span>
                   </p>
                 )}
@@ -678,7 +690,7 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
 
             {/* Subjects Grid for this Simulated Class */}
             <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#6B7280]">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#6B7280]">
                 {classLabel(simClass)} Enrolled Subjects
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -687,9 +699,9 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
                   ?.subjects.map((s) => (
                     <div
                       key={s.name}
-                      className="p-3 bg-white rounded-xl border border-[#E3E5EC] shadow-2xs space-y-1"
+                      className="p-3 bg-white rounded-[14px] border-2 border-[#E3E5EC] shadow-[0_4px_0_#EDEFF6] space-y-1"
                     >
-                      <p className="text-xs font-bold text-[#1E2233]">{s.name}</p>
+                      <p className="text-xs font-extrabold text-[#1E2233]">{s.name}</p>
                       <p className="text-[11px] text-[#6B7280]">
                         {s.chapters.length} chapters · {s.videoCount} lessons
                       </p>

@@ -7,19 +7,16 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
-  writeBatch,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from './firebase';
 import { Video, User, UserProgress, Feedback } from '../types';
-import { INITIAL_VIDEOS } from '../data/curriculumData';
 import { StorageService } from './storage';
 import { normalizeVideo, toStoredVideo } from '../data/classFormat';
+import { bumpDemoStat } from './stats';
 
-const SEED_VERSION_KEY = 'chapterplay_seed_version';
-const SEED_VERSION = '2';
 
 export const FirestoreService = {
-  // Fetch active videos with fallback to initial seed and localStorage caching
+  // Fetch the catalogue from Firestore; offline, the last catalogue this browser cached (never sample data)
   async fetchVideos(): Promise<Video[]> {
     // Check cached catalog first (FR-4)
     const cached = StorageService.getCachedCatalog();
@@ -28,35 +25,21 @@ export const FirestoreService = {
       try {
         const videosRef = collection(db, 'videos');
         const snapshot = await getDocs(videosRef);
-        if (!snapshot.empty) {
-          const videos: Video[] = [];
-          snapshot.forEach((docSnap) => {
-            videos.push(normalizeVideo(docSnap.data(), docSnap.id));
-          });
-          StorageService.setCachedCatalog(videos);
-          return videos;
-        }
+        // A successful answer is authoritative, even when empty: it also replaces any stale cache
+        // (older builds cached a bundled sample catalogue).
+        const videos: Video[] = [];
+        snapshot.forEach((docSnap) => {
+          videos.push(normalizeVideo(docSnap.data(), docSnap.id));
+        });
+        StorageService.setCachedCatalog(videos);
+        return videos;
       } catch (err) {
-        console.warn('Firestore fetch failed, falling back to cached or seed catalog:', err);
+        console.warn('Firestore fetch failed, falling back to the last cached catalogue:', err);
       }
     }
 
-    // Return cached if available, or initialize from rich seed data
-    if (cached && cached.length > 0) {
-      const normalized = cached.map((v) => normalizeVideo(v as unknown as Record<string, unknown>, v.youtube_id));
-      // Demo browsers keep their cached catalogue (with admin edits); add lessons from newer seed data once.
-      if (!isFirebaseConfigured && localStorage.getItem(SEED_VERSION_KEY) !== SEED_VERSION) {
-        const known = new Set(normalized.map((v) => v.youtube_id));
-        const merged = [...normalized, ...INITIAL_VIDEOS.filter((v) => !known.has(v.youtube_id))];
-        StorageService.setCachedCatalog(merged);
-        localStorage.setItem(SEED_VERSION_KEY, SEED_VERSION);
-        return merged;
-      }
-      return normalized;
-    }
-
-    StorageService.setCachedCatalog(INITIAL_VIDEOS);
-    return INITIAL_VIDEOS;
+    // Offline or a failed fetch: the last real catalogue this browser saw. Never sample data.
+    return cached ? cached.map((v) => normalizeVideo(v as unknown as Record<string, unknown>, v.youtube_id)) : [];
   },
 
   // Get User Profile from Firestore or LocalStorage
@@ -87,7 +70,7 @@ export const FirestoreService = {
       email,
       displayName: displayName || email?.split('@')[0] || 'Student',
       phoneNumber: phoneNumber || null,
-      reminders_enabled: true,
+      reminders_enabled: false, // DPDP: opt-in only, never pre-ticked
       reminder_frequency: 'weekly',
       last_watched_video: null,
       created_at: Date.now(),
@@ -142,7 +125,7 @@ export const FirestoreService = {
 
   // Update last watched video (FR-6)
   async updateLastWatched(userId: string, youtubeId: string): Promise<void> {
-    StorageService.setLastWatchedVideo(youtubeId);
+    StorageService.setLastWatchedVideo(userId, youtubeId);
 
     if (isFirebaseConfigured && db) {
       try {
@@ -210,6 +193,9 @@ export const FirestoreService = {
       last_viewed: Date.now(),
     };
 
+    // Demo stand-in for the countLessonProgress Cloud Function (no-op in live mode).
+    if (!localMap[youtubeId]) bumpDemoStat('lessonsStarted');
+    if (updated.completed && !existing.completed) bumpDemoStat('lessonsCompleted');
     localMap[youtubeId] = updated;
     StorageService.setUserProgress(userId, localMap);
 
@@ -266,7 +252,7 @@ export const FirestoreService = {
 
   // ADMIN: Add a new video to database
   async addVideo(video: Video): Promise<void> {
-    const catalog = StorageService.getCachedCatalog() || [...INITIAL_VIDEOS];
+    const catalog = StorageService.getCachedCatalog() || [];
     const existingIndex = catalog.findIndex((v) => v.youtube_id === video.youtube_id);
     if (existingIndex >= 0) {
       catalog[existingIndex] = video;
@@ -291,7 +277,7 @@ export const FirestoreService = {
 
   // ADMIN: Update existing video metadata
   async updateVideo(youtubeId: string, updates: Partial<Video>): Promise<void> {
-    const catalog = StorageService.getCachedCatalog() || [...INITIAL_VIDEOS];
+    const catalog = StorageService.getCachedCatalog() || [];
     const index = catalog.findIndex((v) => v.youtube_id === youtubeId);
     if (index >= 0) {
       catalog[index] = { ...catalog[index], ...updates };
@@ -316,7 +302,7 @@ export const FirestoreService = {
 
   // ADMIN: Delete video from database
   async deleteVideo(youtubeId: string): Promise<void> {
-    const catalog = StorageService.getCachedCatalog() || [...INITIAL_VIDEOS];
+    const catalog = StorageService.getCachedCatalog() || [];
     const filtered = catalog.filter((v) => v.youtube_id !== youtubeId);
     StorageService.setCachedCatalog(filtered);
 
@@ -329,26 +315,6 @@ export const FirestoreService = {
         throw err;
       }
     }
-  },
-
-  // ADMIN: Seed initial NCERT curriculum into Firestore
-  async seedCurriculumToFirestore(): Promise<{ count: number }> {
-    let count = 0;
-    if (isFirebaseConfigured && db) {
-      for (let i = 0; i < INITIAL_VIDEOS.length; i += 450) {
-        const batch = writeBatch(db);
-        INITIAL_VIDEOS.slice(i, i + 450).forEach((video) => {
-          // Re-seeding must not undo an admin's moderation; a missing isActive reads as active.
-          const { isActive: _moderation, ...stored } = toStoredVideo(video);
-          batch.set(doc(db!, 'videos', video.youtube_id), stored, { merge: true });
-          count++;
-        });
-        await batch.commit();
-      }
-    }
-    // Also ensure local catalog is refreshed
-    StorageService.setCachedCatalog(INITIAL_VIDEOS);
-    return { count: count > 0 ? count : INITIAL_VIDEOS.length };
   },
 
   // ADMIN: Fetch feedback submissions for review
@@ -374,7 +340,7 @@ export const FirestoreService = {
       }
     }
 
-    // Return stored local feedbacks or sample feedbacks
+    // Demo mode (no Firebase keys): feedback submitted in this browser only.
     const stored = localStorage.getItem('ncert_prep_feedbacks');
     if (stored) {
       try {
@@ -383,30 +349,7 @@ export const FirestoreService = {
         // ignore
       }
     }
-    return [
-      {
-        feedbackId: 'fb-demo-01',
-        userId: 'demo-student-user',
-        userEmail: 'student@ncertprep.demo',
-        youtube_id: 'd4b_B295xY8',
-        videoTitle: 'Chemical Reactions and Equations',
-        message: 'Could you add more numerical practice for balancing redox equations in the notes?',
-        rating: 5,
-        status: 'new',
-        created_at: Date.now() - 3600000 * 4,
-      },
-      {
-        feedbackId: 'fb-demo-02',
-        userId: 'student-99',
-        userEmail: 'aarav.sharma@example.com',
-        youtube_id: '4x3yVq3c5f8',
-        videoTitle: 'Metals and Non-metals',
-        message: 'The audio on the electrolytic refining section was super clear. Very helpful for Class 10 boards!',
-        rating: 5,
-        status: 'reviewed',
-        created_at: Date.now() - 3600000 * 24,
-      },
-    ];
+    return [];
   },
 
   // ADMIN: Update feedback review status

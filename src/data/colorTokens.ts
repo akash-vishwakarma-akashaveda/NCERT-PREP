@@ -3,50 +3,58 @@ export interface ClassTileStyle {
   text: string;
   border: string;
   badgeBg: string;
+  /** Saturated accent for glyphs, progress bars and ledges (EduPlay palette). */
+  ink: string;
   name: string;
 }
 
 export const CLASS_PALETTE: Record<number, ClassTileStyle> = {
   1: {
-    bg: '#FAECE7',
+    bg: '#FFE9E2',
     text: '#4A1B0C',
-    border: '#F3D2C6',
-    badgeBg: '#F5D7CD',
+    border: '#FFC3B1',
+    badgeBg: '#FFC3B1',
+    ink: '#E0603F',
     name: 'coral',
   },
   2: {
-    bg: '#E1F5EE',
+    bg: '#E1F6EE',
     text: '#04342C',
-    border: '#BCE8DC',
-    badgeBg: '#C7EFE4',
+    border: '#A9E6D3',
+    badgeBg: '#A9E6D3',
+    ink: '#12A594',
     name: 'teal',
   },
   3: {
-    bg: '#EEEDFE',
+    bg: '#EDEAFE',
     text: '#26215C',
-    border: '#D7D4FC',
-    badgeBg: '#E0DEFD',
+    border: '#C7BEF7',
+    badgeBg: '#C7BEF7',
+    ink: '#7A5BE0',
     name: 'purple',
   },
   4: {
-    bg: '#FAEEDA',
+    bg: '#FFF0D8',
     text: '#412402',
-    border: '#F3DCB7',
-    badgeBg: '#F7E4C4',
+    border: '#FFD97A',
+    badgeBg: '#FFD97A',
+    ink: '#C98A0E',
     name: 'amber',
   },
   5: {
-    bg: '#FBEAF0',
+    bg: '#FDE8F1',
     text: '#4B1528',
-    border: '#F5D2DF',
-    badgeBg: '#F8D8E5',
+    border: '#F8BFD6',
+    badgeBg: '#F8BFD6',
+    ink: '#D2538C',
     name: 'pink',
   },
   6: {
-    bg: '#E6F1FB',
+    bg: '#E3EFFF',
     text: '#042C53',
-    border: '#CBE0F7',
-    badgeBg: '#D5E6F8',
+    border: '#B4D0FA',
+    badgeBg: '#B4D0FA',
+    ink: '#3B4FE0',
     name: 'blue',
   },
 };

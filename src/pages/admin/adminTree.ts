@@ -7,6 +7,7 @@ export interface AdminChapterNode {
   key: string;
   class_sort: string;
   subject: string;
+  textbook?: string;
   chapter_id: string;
   chapter_name: string;
   order: number;
@@ -84,14 +85,15 @@ export function buildAdminTree(videos: Video[], records: CurriculumRecords): Adm
     return subjects.get(key)!;
   };
 
-  const ensureChapter = (sort: string, subject: string, chapterId: string, chapterName: string) => {
-    const key = chapterKey(sort, subject, chapterId);
+  const ensureChapter = (sort: string, subject: string, chapterId: string, chapterName: string, textbook = '') => {
+    const key = chapterKey(sort, subject, chapterId, textbook);
     if (!chapters.has(key)) {
-      const rec = chapterRec.get(key);
+      const rec = chapterRec.get(key) ?? (textbook ? chapterRec.get(chapterKey(sort, subject, chapterId)) : undefined);
       const node: AdminChapterNode = {
         key,
         class_sort: sort,
         subject,
+        textbook: textbook || undefined,
         chapter_id: chapterId,
         chapter_name: rec?.chapter_name || chapterName,
         order: rec?.order ?? 999,
@@ -108,11 +110,17 @@ export function buildAdminTree(videos: Video[], records: CurriculumRecords): Adm
   videos.forEach((v) => {
     ensureClass(v.class_sort).videoCount += 1;
     ensureSubject(v.class_sort, v.subject, v.textbook).videoCount += 1;
-    ensureChapter(v.class_sort, v.subject, v.chapter_id, v.chapter_name).videoCount += 1;
+    ensureChapter(v.class_sort, v.subject, v.chapter_id, v.chapter_name, v.textbook).videoCount += 1;
   });
   records.classes.forEach((r) => ensureClass(r.class_sort));
   records.subjects.forEach((r) => ensureSubject(r.class_sort, r.name, r.textbook));
-  records.chapters.forEach((r) => ensureChapter(r.class_sort, r.subject, r.chapter_id, r.chapter_name));
+  records.chapters.forEach((r) => {
+    // Pre-book records already overlay their video chapter above; don't add a duplicate node.
+    const overlaid = !r.textbook && Array.from(chapters.values()).some(
+      (n) => n.class_sort === r.class_sort && n.subject === r.subject && n.chapter_id === r.chapter_id
+    );
+    if (!overlaid) ensureChapter(r.class_sort, r.subject, r.chapter_id, r.chapter_name, r.textbook);
+  });
 
   const sorted = Array.from(classes.values()).sort((a, b) => a.order - b.order);
   sorted.forEach((c) => {

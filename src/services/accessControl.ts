@@ -1,75 +1,38 @@
 import { Video, User } from '../types';
+import type { ContentAccessPolicy } from './dashboardControl';
 
 /**
- * Access Control for NCERT Prep:
- * - Registered Users (signed in via Google, Email, OTP, or Demo): Full, unlimited access to all lessons,
- *   notes, formula cheat sheets, private doubts, and progress tracking.
- * - Visitors (unauthenticated): Limited preview access.
- *   Only Chapter 1 (the first lesson of each subject) is available as a Free Preview.
- *   All subsequent chapters (Chapters 2..N) require creating/logging into a free student account.
+ * Visitor access, driven by the admin's Content Access policy (Dashboard Control → Access policy):
+ * - Signed-in users: every lesson.
+ * - Visitors: the first lesson of the first `freePreviewCount` chapters of each subject,
+ *   or nothing if `freePreviewEnabled` is off. Everything else asks them to create a free account.
+ * This is a sign-up nudge in the browser, not a security boundary: the videos are public on YouTube.
  */
+export const DEFAULT_ACCESS_POLICY: ContentAccessPolicy = { freePreviewEnabled: true, freePreviewCount: 1, allowGuestNotes: false };
 
-/**
- * Determines if a video is eligible as a free preview sample for visitors.
- * By default, the first chapter of any subject (index 0 or CH-01 / *-01) is free preview.
- */
 export function isFreePreviewLesson(
   video: Video,
   chapterIndex?: number,
-  videoIndexInChapter?: number
+  videoIndexInChapter?: number,
+  policy: ContentAccessPolicy = DEFAULT_ACCESS_POLICY
 ): boolean {
+  if (!policy.freePreviewEnabled) return false;
+  const chapters = Math.max(1, policy.freePreviewCount || 1);
   if (typeof chapterIndex === 'number') {
-    return chapterIndex === 0 && (typeof videoIndexInChapter === 'number' ? videoIndexInChapter === 0 : true);
+    return chapterIndex < chapters && (typeof videoIndexInChapter === 'number' ? videoIndexInChapter === 0 : true);
   }
-
-  // Fallback if chapterIndex is not supplied: inspect chapter_id
-  const cid = video.chapter_id.trim();
-  const isFirstChapterId =
-    cid === 'CH-01' ||
-    cid.endsWith('-01') ||
-    cid.endsWith('-1') ||
-    cid === '1';
-
-  return isFirstChapterId;
+  // Without a position, fall back to the chapter number in the ID ("Chapter 1", "CH-01", …).
+  const n = parseInt(video.chapter_id.match(/\d+/)?.[0] || '0', 10);
+  return n >= 1 && n <= chapters;
 }
 
-/**
- * Checks if a specific lesson is unlocked for the current user.
- */
 export function isLessonUnlocked(
   video: Video,
   user: User | null,
   chapterIndex?: number,
-  videoIndexInChapter?: number
+  videoIndexInChapter?: number,
+  policy?: ContentAccessPolicy
 ): boolean {
-  // Signed-in users always have full access to all curriculum content
   if (user) return true;
-
-  // Visitors only get the free preview lesson
-  return isFreePreviewLesson(video, chapterIndex, videoIndexInChapter);
-}
-
-/**
- * Returns access status with explanatory labels for the UI.
- */
-export function getLessonAccessInfo(
-  video: Video,
-  user: User | null,
-  chapterIndex?: number,
-  videoIndexInChapter?: number
-) {
-  const isMember = Boolean(user);
-  const isPreview = isFreePreviewLesson(video, chapterIndex, videoIndexInChapter);
-  const isUnlocked = isMember || isPreview;
-
-  return {
-    isUnlocked,
-    isPreview,
-    isMember,
-    badgeText: isMember
-      ? null
-      : isPreview
-      ? 'Free Preview'
-      : 'Free Account Required',
-  };
+  return isFreePreviewLesson(video, chapterIndex, videoIndexInChapter, policy);
 }

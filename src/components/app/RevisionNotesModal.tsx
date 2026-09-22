@@ -34,17 +34,17 @@ export const AttachmentRow: React.FC<{ attachment: NoteAttachment; action?: Reac
 }) => {
   const isPdf = attachment.contentType === 'application/pdf';
   return (
-    <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#F5F6FA] border border-[#E3E5EC]">
+    <div className="flex items-center justify-between gap-3 p-3 rounded-[14px] bg-[color:var(--page)] border-2 border-[#E3E5EC]">
       <div className="flex items-center gap-2.5 min-w-0">
         <span
-          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-            isPdf ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-700'
+          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+            isPdf ? 'bg-[#FFDCD0] text-[#C24A2C]' : 'bg-sky-100 text-sky-700'
           }`}
         >
           {isPdf ? <FileText className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
         </span>
         <div className="min-w-0">
-          <p className="text-xs font-semibold text-[#1E2233] truncate">{attachment.name}</p>
+          <p className="text-xs font-bold text-[#1E2233] truncate">{attachment.name}</p>
           <p className="text-[11px] text-[#6B7280]">
             {isPdf ? 'PDF' : 'Image'} • {formatBytes(attachment.size)}
           </p>
@@ -54,7 +54,7 @@ export const AttachmentRow: React.FC<{ attachment: NoteAttachment; action?: Reac
         <button
           type="button"
           onClick={() => openAttachment(attachment)}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-[#3B4FE0] bg-white border border-[#E3E5EC] hover:bg-[#EEEDFE] rounded-lg cursor-pointer"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-[color:var(--brand)] bg-white border-2 border-[#E3E5EC] hover:bg-[#EEEDFE] rounded-xl cursor-pointer"
         >
           <ExternalLink className="w-3.5 h-3.5" />
           Open
@@ -100,14 +100,14 @@ export const ChapterNotesContent: React.FC<{ notes: ChapterNotes | null; loading
     <>
     {loading ? (
       <div className="space-y-3 animate-pulse">
-        <div className="h-20 bg-[#F5F6FA] rounded-2xl" />
-        <div className="h-10 bg-[#F5F6FA] rounded-xl" />
-        <div className="h-10 bg-[#F5F6FA] rounded-xl" />
+        <div className="h-20 bg-[color:var(--page)] rounded-[22px]" />
+        <div className="h-10 bg-[color:var(--page)] rounded-[14px]" />
+        <div className="h-10 bg-[color:var(--page)] rounded-[14px]" />
       </div>
     ) : !notes ? (
       <div className="py-10 text-center space-y-2">
         <FileText className="w-8 h-8 mx-auto text-slate-400" />
-        <p className="text-sm font-semibold text-[#1E2233]">No notes for this chapter yet</p>
+        <p className="text-sm font-bold text-[#1E2233]">No notes for this chapter yet</p>
         <p className="text-xs text-[#6B7280]">
           Your educator hasn&apos;t published notes or a cheat sheet for this chapter. Check back later.
         </p>
@@ -115,9 +115,9 @@ export const ChapterNotesContent: React.FC<{ notes: ChapterNotes | null; loading
     ) : (
       <>
         {notes.summary && (
-          <section className="space-y-1.5 bg-[#EEEDFE]/40 p-4 rounded-2xl border border-[#D7D4FC]">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#26215C] flex items-center gap-1.5">
-              <BookmarkCheck className="w-4 h-4 text-[#3B4FE0]" />
+          <section className="space-y-1.5 bg-[#EEEDFE]/40 p-4 rounded-[22px] border-2 border-[#D7D4FC]">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#26215C] flex items-center gap-1.5">
+              <BookmarkCheck className="w-4 h-4 text-[color:var(--brand)]" />
               Summary
             </h4>
             <p className="text-xs text-[#1E2233] leading-relaxed whitespace-pre-line">{notes.summary}</p>
@@ -126,11 +126,11 @@ export const ChapterNotesContent: React.FC<{ notes: ChapterNotes | null; loading
 
         {notes.key_points.length > 0 && (
           <section className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1E2233]">Key points</h4>
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1E2233]">Key points</h4>
             {notes.key_points.map((pt, i) => (
-              <div key={i} className="flex items-start gap-2.5 p-3 rounded-xl bg-[#F5F6FA] border border-[#E3E5EC] text-xs">
+              <div key={i} className="flex items-start gap-2.5 p-3 rounded-[14px] bg-[color:var(--page)] border-2 border-[#E3E5EC] text-xs">
                 <CheckCircle2 className="w-4 h-4 text-[#12A594] shrink-0 mt-0.5" />
-                <span className="text-[#1E2233] font-medium">{pt}</span>
+                <span className="text-[#1E2233] font-semibold">{pt}</span>
               </div>
             ))}
           </section>
@@ -138,12 +138,12 @@ export const ChapterNotesContent: React.FC<{ notes: ChapterNotes | null; loading
 
         {notes.formulas.length > 0 && (
           <section className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1E2233] flex items-center gap-1.5">
-              <Sigma className="w-4 h-4 text-[#3B4FE0]" />
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1E2233] flex items-center gap-1.5">
+              <Sigma className="w-4 h-4 text-[color:var(--brand)]" />
               Formulas & equations
             </h4>
             {notes.formulas.map((f, i) => (
-              <div key={i} className="p-3 rounded-xl bg-white border border-[#D7D4FC] text-xs font-mono text-[#26215C]">
+              <div key={i} className="p-3 rounded-[14px] bg-white border-2 border-[#D7D4FC] text-xs font-mono text-[#26215C]">
                 {f}
               </div>
             ))}
@@ -152,13 +152,13 @@ export const ChapterNotesContent: React.FC<{ notes: ChapterNotes | null; loading
 
         {notes.exam_tips.length > 0 && (
           <section className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1E2233] flex items-center gap-1.5">
-              <Lightbulb className="w-4 h-4 text-amber-500" />
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1E2233] flex items-center gap-1.5">
+              <Lightbulb className="w-4 h-4 text-[#C98A0E]" />
               Exam tips
             </h4>
             {notes.exam_tips.map((tip, i) => (
-              <div key={i} className="flex items-start gap-2 p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900">
-                <span className="font-bold">•</span>
+              <div key={i} className="flex items-start gap-2 p-3 rounded-[14px] bg-[#FFF6E2]/70 border border-[#FFD97A] text-xs text-[#8A5A14]">
+                <span className="font-extrabold">•</span>
                 <span>{tip}</span>
               </div>
             ))}
@@ -167,7 +167,7 @@ export const ChapterNotesContent: React.FC<{ notes: ChapterNotes | null; loading
 
         {notes.attachments.length > 0 && (
           <section className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1E2233] flex items-center gap-1.5">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1E2233] flex items-center gap-1.5">
               <Paperclip className="w-4 h-4 text-[#6B7280]" />
               Cheat sheets & downloads
             </h4>
@@ -207,20 +207,20 @@ export const RevisionNotesModal: React.FC<RevisionNotesModalProps> = ({ isOpen, 
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl max-h-[88vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-[#E3E5EC] overflow-hidden"
+        className="relative w-full max-w-2xl max-h-[88vh] flex flex-col bg-white rounded-[28px] shadow-2xl border-2 border-[#E3E5EC] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-4 border-b border-[#E3E5EC] flex items-center justify-between bg-[#F5F6FA]">
+        <div className="px-6 py-4 border-b border-[#E3E5EC] flex items-center justify-between bg-[color:var(--page)]">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-[#3B4FE0] text-white flex items-center justify-center shadow-xs shrink-0">
+            <div className="w-9 h-9 rounded-[14px] bg-[color:var(--brand)] text-white flex items-center justify-center shadow-[0_4px_0_var(--card-line)] shrink-0">
               <FileText className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] font-bold text-[#3B4FE0] uppercase tracking-wider">
+              <span className="text-[10px] font-extrabold text-[color:var(--brand)] uppercase tracking-wider">
                 Class {parseInt(target.class_sort, 10)} • {target.subject} • {target.chapter_id}
                 {previewNotes && ' • Preview'}
               </span>
-              <h3 id="notes-title" className="text-base font-bold text-[#1E2233] line-clamp-1">
+              <h3 id="notes-title" className="text-base font-extrabold text-[#1E2233] line-clamp-1">
                 {notes?.title || target.chapter_name || 'Chapter notes'}
               </h3>
             </div>
@@ -228,7 +228,7 @@ export const RevisionNotesModal: React.FC<RevisionNotesModalProps> = ({ isOpen, 
           <button
             onClick={onClose}
             aria-label="Close notes"
-            className="p-1.5 text-[#6B7280] hover:text-[#1E2233] hover:bg-white rounded-xl transition-colors cursor-pointer"
+            className="p-1.5 text-[#6B7280] hover:text-[#1E2233] hover:bg-white rounded-[14px] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -238,13 +238,13 @@ export const RevisionNotesModal: React.FC<RevisionNotesModalProps> = ({ isOpen, 
           <ChapterNotesContent notes={notes} loading={loading} />
         </div>
 
-        <div className="px-6 py-3 border-t border-[#E3E5EC] bg-[#F5F6FA] flex items-center justify-between text-xs text-[#6B7280]">
+        <div className="px-6 py-3 border-t border-[#E3E5EC] bg-[color:var(--page)] flex items-center justify-between text-xs text-[#6B7280]">
           <span>
             {notes?.updated_at ? `Updated ${new Date(notes.updated_at).toLocaleDateString()}` : 'Chapter notes'}
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 text-xs font-semibold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-xl cursor-pointer"
+            className="px-4 py-1.5 text-xs font-bold text-white btn-3d [--edge:var(--brand-edge)] bg-[color:var(--brand)] hover:bg-[color:var(--brand-hover)] rounded-[14px] cursor-pointer"
           >
             Done
           </button>

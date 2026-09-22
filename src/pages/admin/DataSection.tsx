@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { RefreshCw, Wand2, ShieldCheck } from 'lucide-react';
 import { isFirebaseConfigured } from '../../services/firebase';
-import { FirestoreService } from '../../services/firestore';
 import { CurriculumService } from '../../services/content';
 import { AdminClassNode, missingRecords } from './adminTree';
 import { Card, Notify, SectionHeader, primaryButton, secondaryButton } from './adminUi';
@@ -14,23 +13,9 @@ interface DataSectionProps {
 }
 
 export const DataSection: React.FC<DataSectionProps> = ({ tree, videoCount, onRefreshCatalog, notify }) => {
-  const [busy, setBusy] = useState<'seed' | 'records' | null>(null);
+  const [busy, setBusy] = useState<'records' | null>(null);
   const missing = missingRecords(tree);
   const missingCount = missing.classes.length + missing.subjects.length + missing.chapters.length;
-
-  const seed = async () => {
-    if (!window.confirm('Write the bundled sample curriculum into the database? Existing visibility settings are kept.')) return;
-    setBusy('seed');
-    try {
-      const res = await FirestoreService.seedCurriculumToFirestore();
-      await onRefreshCatalog();
-      notify(`Synced ${res.count} sample lessons.`);
-    } catch {
-      notify('Failed to seed curriculum.', 'error');
-    } finally {
-      setBusy(null);
-    }
-  };
 
   const createRecords = async () => {
     setBusy('records');
@@ -52,10 +37,10 @@ export const DataSection: React.FC<DataSectionProps> = ({ tree, videoCount, onRe
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="p-5 space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-[#1E2233]">Backend</h3>
+            <h3 className="text-sm font-extrabold text-[#1E2233]">Backend</h3>
             <span
-              className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                isFirebaseConfigured ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+              className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full ${
+                isFirebaseConfigured ? 'bg-[#E7F7F1] text-[#0B7A67]' : 'bg-[#FFF1D6] text-[#8A5A14]'
               }`}
             >
               {isFirebaseConfigured ? 'Live Firebase' : 'Demo mode'}
@@ -69,7 +54,7 @@ export const DataSection: React.FC<DataSectionProps> = ({ tree, videoCount, onRe
         </Card>
 
         <Card className="p-5 space-y-2">
-          <h3 className="text-sm font-bold text-[#1E2233]">Catalog</h3>
+          <h3 className="text-sm font-extrabold text-[#1E2233]">Catalog</h3>
           <p className="text-xs text-[#6B7280]">
             {videoCount} videos across {tree.length} classes. Videos normally arrive from the Google Sheet sync
             (<code>scripts/google-apps-script-sync.js</code>); the sync never changes visibility.
@@ -80,7 +65,7 @@ export const DataSection: React.FC<DataSectionProps> = ({ tree, videoCount, onRe
         </Card>
 
         <Card className="p-5 space-y-3">
-          <h3 className="text-sm font-bold text-[#1E2233]">Curriculum records</h3>
+          <h3 className="text-sm font-extrabold text-[#1E2233]">Curriculum records</h3>
           <p className="text-xs text-[#6B7280]">
             {missingCount > 0
               ? `${missingCount} classes, subjects or chapters exist only in video rows. Create records to rename, reorder or hide them.`
@@ -91,17 +76,10 @@ export const DataSection: React.FC<DataSectionProps> = ({ tree, videoCount, onRe
           </button>
         </Card>
 
-        <Card className="p-5 space-y-3">
-          <h3 className="text-sm font-bold text-[#1E2233]">Sample curriculum</h3>
-          <p className="text-xs text-[#6B7280]">Loads the bundled NCERT sample lessons. Useful for a fresh project or a demo.</p>
-          <button onClick={seed} disabled={busy !== null} className={secondaryButton}>
-            <RefreshCw className={`w-3.5 h-3.5 ${busy === 'seed' ? 'animate-spin' : ''}`} /> {busy === 'seed' ? 'Writing…' : 'Seed sample curriculum'}
-          </button>
-        </Card>
       </div>
 
       <Card className="p-5 space-y-2">
-        <h3 className="text-sm font-bold text-[#1E2233] flex items-center gap-2">
+        <h3 className="text-sm font-extrabold text-[#1E2233] flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-[#12A594]" /> Admin access
         </h3>
         <p className="text-xs text-[#6B7280]">

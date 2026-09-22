@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Plus, Search, Eye, Edit2, Trash2, CheckCircle2, AlertTriangle, Play, PlaySquare } from 'lucide-react';
 import { Video } from '../../types';
 import { FirestoreService } from '../../services/firestore';
+import { isFirebaseConfigured } from '../../services/firebase';
 import { AdminClassNode } from './adminTree';
 import { Card, EmptyState, Modal, Notify, SectionHeader, inputClass, primaryButton, secondaryButton } from './adminUi';
 
@@ -29,11 +30,15 @@ const EMPTY_FORM: Partial<Video> = {
 
 const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
 
+// Live mode: the Google Sheet owns lesson content (class, subject, book, chapter, title, publish state)
+// and every sync overwrites it. Admin owns visibility and the PYQ flag only. Demo mode edits everything.
+const SHEET_MANAGED = isFirebaseConfigured;
+
 export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRefreshCatalog, notify, onSelectVideo }) => {
   const [queryText, setQueryText] = useState('');
   const [filterClass, setFilterClass] = useState('all');
   const [filterSubject, setFilterSubject] = useState('all');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'unpublished'>('all');
   const [form, setForm] = useState<Partial<Video> | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [preview, setPreview] = useState<Video | null>(null);
@@ -46,9 +51,10 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
     if (filterSubject !== 'all' && v.subject !== filterSubject) return false;
     if (filterStatus === 'active' && !v.isActive) return false;
     if (filterStatus === 'inactive' && v.isActive) return false;
+    if (filterStatus === 'unpublished' && v.yt_public !== false) return false;
     const q = queryText.trim().toLowerCase();
     if (!q) return true;
-    return [v.video_title, v.chapter_name, v.subject, v.youtube_id].some((f) => f.toLowerCase().includes(q));
+    return [v.video_title, v.chapter_name, v.subject, v.textbook || '', v.youtube_id].some((f) => f.toLowerCase().includes(q));
   });
 
   const formClass = tree.find((c) => c.class_sort === form?.class_sort);
@@ -57,6 +63,21 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form) return;
+    if (SHEET_MANAGED && editingId) {
+      setSaving(true);
+      try {
+        await FirestoreService.updateVideo(editingId, { isActive: Boolean(form.isActive), pyq_available: Boolean(form.pyq_available) });
+        await onRefreshCatalog();
+        notify(`Updated "${form.video_title}".`);
+        setForm(null);
+        setEditingId(null);
+      } catch (err) {
+        notify((err as Error).message || 'Failed to save video.', 'error');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     const youtubeId = (form.youtube_id || '').trim();
     if (!YOUTUBE_ID.test(youtubeId)) return notify('YouTube ID must be exactly 11 letters, numbers, - or _.', 'error');
     if (!form.subject?.trim() || !form.chapter_id?.trim() || !form.chapter_name?.trim() || !form.video_title?.trim()) {
@@ -121,9 +142,13 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
     <div className="space-y-6">
       <SectionHeader
         title="Videos"
-        description="Lessons synced from the Google Sheet or added here. Hiding a video keeps it in students' history as “No longer available”."
+        description={
+          SHEET_MANAGED
+            ? 'Lessons come from the Google Sheet (NCERT Prep → Sync videos to Firestore). Edit titles, chapters and books in the sheet; here you control visibility.'
+            : "Demo mode: lessons are edited here. Hiding a video keeps it in students' history as “No longer available”."
+        }
         actions={
-          <button
+          !SHEET_MANAGED && <button
             onClick={() => {
               setEditingId(null);
               setForm({ ...EMPTY_FORM, class_sort: filterClass !== 'all' ? filterClass : '10' });
@@ -172,15 +197,16 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
             <option value="all">All statuses</option>
             <option value="active">Visible</option>
             <option value="inactive">Hidden</option>
+            <option value="unpublished">Not public on YouTube</option>
           </select>
         </div>
 
         {filtered.length === 0 ? (
           <EmptyState icon={<PlaySquare className="w-8 h-8" />} title="No videos match these filters" />
         ) : (
-          <div className="overflow-x-auto border border-[#E3E5EC] rounded-xl">
+          <div className="overflow-x-auto border-2 border-[#E3E5EC] rounded-[14px]">
             <table className="w-full text-left text-xs text-[#1E2233]">
-              <thead className="bg-[#F5F6FA] border-b border-[#E3E5EC] text-[#6B7280] font-bold">
+              <thead className="bg-[#F5F6FA] border-b border-[#E3E5EC] text-[#6B7280] font-extrabold">
                 <tr>
                   <th className="py-3 px-4">Class & subject</th>
                   <th className="py-3 px-4">Chapter & lesson</th>
@@ -191,13 +217,14 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
               </thead>
               <tbody className="divide-y divide-[#E3E5EC]">
                 {filtered.map((v) => (
-                  <tr key={v.youtube_id} className={v.isActive ? '' : 'bg-amber-50/40'}>
+                  <tr key={v.youtube_id} className={v.isActive ? '' : 'bg-[#FFF6E2]/40'}>
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <div className="font-bold">{v.class_display}</div>
-                      <div className="text-[11px] text-[#12A594] font-semibold">{v.subject}</div>
+                      <div className="font-extrabold">{v.class_display}</div>
+                      <div className="text-[11px] text-[#12A594] font-bold">{v.subject}</div>
+                      {v.textbook && <div className="text-[11px] text-[#6B7280] font-bold max-w-[180px] truncate">{v.textbook}</div>}
                     </td>
                     <td className="py-3 px-4">
-                      <div className="font-bold line-clamp-1">
+                      <div className="font-extrabold line-clamp-1">
                         {v.chapter_id} · {v.chapter_name}
                       </div>
                       <div className="text-[11px] text-[#6B7280] line-clamp-1">{v.video_title}</div>
@@ -206,17 +233,22 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
                     <td className="py-3 px-4 whitespace-nowrap">
                       <button
                         onClick={() => toggleActive(v)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold cursor-pointer ${
-                          v.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold cursor-pointer ${
+                          v.isActive ? 'bg-[#E7F7F1] text-[#0B7A67]' : 'bg-[#FFDCD0] text-[#8A2E17]'
                         }`}
                         title="Toggle visibility"
                       >
                         {v.isActive ? <CheckCircle2 className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
                         {v.isActive ? 'Visible' : 'Hidden'}
                       </button>
+                      {v.yt_public === false && (
+                        <span className="ml-1.5 inline-flex px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#F1F3FB] text-[#6B7280]" title="Sheet says the YouTube upload is not public yet. Students can't see it until the sheet shows PUBLISH_OK.">
+                          Not public yet
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap text-right space-x-1">
-                      <button onClick={() => setPreview(v)} aria-label="Preview" className="p-1.5 text-slate-600 hover:text-[#3B4FE0] rounded-lg cursor-pointer">
+                      <button onClick={() => setPreview(v)} aria-label="Preview" className="p-1.5 text-slate-600 hover:text-[#3B4FE0] rounded-xl cursor-pointer">
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
@@ -225,13 +257,13 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
                           setForm(v);
                         }}
                         aria-label="Edit"
-                        className="p-1.5 text-slate-600 hover:text-[#12A594] rounded-lg cursor-pointer"
+                        className="p-1.5 text-slate-600 hover:text-[#12A594] rounded-xl cursor-pointer"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => remove(v)} aria-label="Delete" className="p-1.5 text-slate-600 hover:text-rose-600 rounded-lg cursor-pointer">
+                      {!SHEET_MANAGED && <button onClick={() => remove(v)} aria-label="Delete" className="p-1.5 text-slate-600 hover:text-[#C24A2C] rounded-xl cursor-pointer">
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </button>}
                     </td>
                   </tr>
                 ))}
@@ -247,13 +279,14 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
       {form && (
         <Modal
           title={editingId ? 'Edit video' : 'Add video'}
-          subtitle="Rows synced from the Google Sheet are overwritten on the next sync, except visibility."
+          subtitle={SHEET_MANAGED ? 'Content comes from the Google Sheet. Change it there and sync; visibility and PYQs are set here.' : undefined}
           onClose={() => setForm(null)}
         >
           <form onSubmit={save} className="space-y-4">
+            <fieldset disabled={SHEET_MANAGED} className="space-y-4 disabled:opacity-70">
             <div className="grid grid-cols-2 gap-3">
               <label className="space-y-1">
-                <span className="text-xs font-bold">Class</span>
+                <span className="text-xs font-extrabold">Class</span>
                 <select value={form.class_sort} onChange={(e) => setForm({ ...form, class_sort: e.target.value })} className={inputClass}>
                   {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map((c) => (
                     <option key={c} value={c}>
@@ -263,7 +296,7 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
                 </select>
               </label>
               <label className="space-y-1">
-                <span className="text-xs font-bold">Subject</span>
+                <span className="text-xs font-extrabold">Subject</span>
                 <input
                   list="admin-subjects"
                   value={form.subject}
@@ -279,7 +312,7 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
 
             <div className="grid grid-cols-2 gap-3">
               <label className="space-y-1">
-                <span className="text-xs font-bold">Chapter ID</span>
+                <span className="text-xs font-extrabold">Chapter ID</span>
                 <input
                   list="admin-chapters"
                   value={form.chapter_id}
@@ -295,7 +328,7 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
                 </datalist>
               </label>
               <label className="space-y-1">
-                <span className="text-xs font-bold">Duration (minutes)</span>
+                <span className="text-xs font-extrabold">Duration (minutes)</span>
                 <input
                   type="number"
                   min={1}
@@ -307,15 +340,15 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
             </div>
 
             <label className="block space-y-1">
-              <span className="text-xs font-bold">Chapter name</span>
+              <span className="text-xs font-extrabold">Chapter name</span>
               <input value={form.chapter_name} onChange={(e) => setForm({ ...form, chapter_name: e.target.value })} className={inputClass} />
             </label>
             <label className="block space-y-1">
-              <span className="text-xs font-bold">Video title</span>
+              <span className="text-xs font-extrabold">Video title</span>
               <input value={form.video_title} onChange={(e) => setForm({ ...form, video_title: e.target.value })} className={inputClass} />
             </label>
             <label className="block space-y-1">
-              <span className="text-xs font-bold">YouTube video ID</span>
+              <span className="text-xs font-extrabold">YouTube video ID</span>
               <input
                 value={form.youtube_id}
                 disabled={Boolean(editingId)}
@@ -325,12 +358,18 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
               />
             </label>
 
+            </fieldset>
+            {form.pdf_url && (
+              <a href={form.pdf_url} target="_blank" rel="noopener noreferrer" className="block text-xs font-extrabold text-[#3B4FE0]">
+                NCERT chapter PDF ↗
+              </a>
+            )}
             <div className="flex flex-wrap items-center gap-5 pt-2 border-t border-[#E3E5EC]">
-              <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+              <label className="flex items-center gap-2 text-xs font-extrabold cursor-pointer">
                 <input type="checkbox" checked={Boolean(form.isActive)} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />
                 Visible to students
               </label>
-              <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+              <label className="flex items-center gap-2 text-xs font-extrabold cursor-pointer">
                 <input type="checkbox" checked={Boolean(form.pyq_available)} onChange={(e) => setForm({ ...form, pyq_available: e.target.checked })} />
                 Includes PYQs
               </label>
@@ -351,7 +390,7 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
       {preview && (
         <Modal title={preview.video_title} subtitle={`${preview.class_display} • ${preview.subject} • ${preview.chapter_name}`} onClose={() => setPreview(null)} wide>
           <div className="space-y-4">
-            <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black">
+            <div className="aspect-video w-full rounded-[22px] overflow-hidden bg-black">
               <iframe
                 src={`https://www.youtube-nocookie.com/embed/${preview.youtube_id}?controls=1&rel=0&modestbranding=1`}
                 title={preview.video_title}

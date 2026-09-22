@@ -32,3 +32,6 @@ functions/lib
 .firebase
 firebase-debug*.log
 functions/.secret.local
+
+# Office lock files
+~$*

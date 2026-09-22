@@ -29,17 +29,17 @@ export const SubjectGrid: React.FC<SubjectGridProps> = ({ subjects, onSelectSubj
         >
           <div className="flex items-start justify-between gap-3">
             <span
-              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold"
+              className="px-2.5 py-1 rounded-xl text-[11px] font-bold"
               style={{ backgroundColor: style.bg, color: style.text }}
             >
               {sub.isFocus ? 'Focus subject' : 'Subject'}
             </span>
-            <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-[#3B4FE0] transition-colors" />
+            <ArrowUpRight className="w-4 h-4 text-[#6B7280] group-hover:text-[color:var(--brand)] transition-colors" />
           </div>
 
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-lg font-semibold tracking-tight text-[#1E2233] truncate">{sub.name}</h3>
+              <h3 className="text-lg font-bold tracking-tight text-[#1E2233] truncate">{sub.name}</h3>
               <p className="text-xs text-[#6B7280]">
                 {sub.chapterCount !== undefined && `${sub.chapterCount} chapters · `}
                 {sub.completed}/{sub.total} lessons
@@ -51,7 +51,7 @@ export const SubjectGrid: React.FC<SubjectGridProps> = ({ subjects, onSelectSubj
               stroke={6}
               color={style.text}
               trackColor={style.bg}
-              label={<span className="text-[11px] font-semibold text-[#1E2233]">{percent}%</span>}
+              label={<span className="text-[11px] font-bold text-[#1E2233]">{percent}%</span>}
             />
           </div>
         </button>

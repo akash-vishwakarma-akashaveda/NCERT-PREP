@@ -1,16 +1,14 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   signInWithPopup,
-  signInWithPhoneNumber,
   reauthenticateWithPopup,
   reauthenticateWithCredential,
-  EmailAuthProvider,
-  RecaptchaVerifier,
-  ConfirmationResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   sendPasswordResetEmail,
   updateProfile as fbUpdateProfile,
+  EmailAuthProvider,
   signOut as fbSignOut,
   onAuthStateChanged,
   User as FirebaseUser,
@@ -20,8 +18,10 @@ import { httpsCallable, FunctionsError } from 'firebase/functions';
 import { FirestoreService } from '../services/firestore';
 import { DoubtsService } from '../services/content';
 import { StorageService } from '../services/storage';
-import { User } from '../types';
+import { User, UserConsent } from '../types';
+import { NOTICE_VERSION, NoticeLang } from '../data/privacyNotice';
 import { nextStreak } from '../data/gamification';
+import { StatsService, bumpDemoStat } from '../services/stats';
 
 interface AuthContextType {
   user: User | null;
@@ -30,19 +30,30 @@ interface AuthContextType {
   isAdmin: boolean;
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
+  // Firebase Auth only: Google, or email + password (verified by email link). Without Firebase keys
+  // (local development) both create a browser-only demo account instead.
   signInWithGoogle: () => Promise<void>;
-  signInWithEmail: (email: string, pass: string) => Promise<void>;
-  signUpWithEmail: (email: string, pass: string, name: string, gradePreference?: string) => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (name: string, email: string, password: string) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
-  sendPhoneOtp: (phoneE164: string, recaptchaContainerId: string) => Promise<void>;
-  verifyPhoneOtp: (code: string) => Promise<void>;
+  /** False only for email/password accounts that have not clicked the verification link yet. */
+  emailVerified: boolean;
+  resendVerification: () => Promise<void>;
+  /** Re-reads verification state after the user clicks the link in their inbox. */
+  refreshEmailVerified: () => Promise<boolean>;
+  // DPDP consent (recorded server-side; demo mode stores it locally)
+  giveAdultConsent: (language: NoticeLang) => Promise<void>;
+  requestParentConsent: (parentName: string, parentEmail: string, language: NoticeLang) => Promise<string>;
+  /** Demo mode only: stands in for the parent clicking "Approve". */
+  simulateParentApproval: () => Promise<void>;
+  /** Development only (no Firebase keys): local demo account, optionally as admin. */
   signInDemo: (email?: string, name?: string, role?: 'student' | 'admin', grade?: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateSettings: (settings: Partial<Pick<User, 'reminders_enabled' | 'reminder_frequency' | 'reminder_hour'>>) => Promise<void>;
   updateProfile: (updates: Partial<Omit<User, 'role' | 'userId'>>) => Promise<void>;
   recordStudyActivity: () => Promise<void>;
   deleteAccount: () => Promise<void>;
-  // Provider the user must re-confirm with before deletion: 'google.com' | 'password' | 'phone'.
+  /** 'google.com' or 'password': how the user must re-confirm before deletion. */
   reauthProviderId: string | null;
   reauthenticate: (password?: string) => Promise<void>;
 }
@@ -54,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [isDemoUser, setIsDemoUser] = useState<boolean>(false);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [emailVerified, setEmailVerified] = useState<boolean>(true);
 
   // Initialize Auth listener or check local storage
   useEffect(() => {
@@ -62,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isFirebaseConfigured && auth) {
       unsubscribe = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
         if (fbUser) {
+          setEmailVerified(fbUser.emailVerified || fbUser.providerData[0]?.providerId !== 'password');
           try {
             const userDoc = await FirestoreService.createOrGetUser(
               fbUser.uid,
@@ -75,15 +88,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('Error fetching user profile:', err);
           }
         } else {
-          // Check if local demo user exists
-          const localUser = StorageService.getLocalUser();
-          if (localUser) {
-            setUser(localUser);
-            setIsDemoUser(true);
-          } else {
-            setUser(null);
-            setIsDemoUser(false);
-          }
+          // Live mode only trusts Firebase Auth; a demo session left in this browser is discarded.
+          StorageService.setLocalUser(null);
+          setUser(null);
+          setIsDemoUser(false);
         }
         setLoading(false);
       });
@@ -101,6 +109,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (unsubscribe) unsubscribe();
     };
   }, []);
+
+  // Count the visit once auth has settled (and again on sign-in, to count active students). Once per day per browser.
+  useEffect(() => {
+    if (!loading) StatsService.trackVisit(user?.userId);
+  }, [loading, user?.userId]);
 
   const signInWithGoogle = useCallback(async () => {
     setLoading(true);
@@ -128,123 +141,99 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const signInWithEmail = useCallback(async (email: string, pass: string) => {
-    setLoading(true);
-    if (isFirebaseConfigured && auth) {
-      try {
-        const cred = await signInWithEmailAndPassword(auth, email, pass);
-        const fbUser = cred.user;
-        const userDoc = await FirestoreService.createOrGetUser(
-          fbUser.uid,
-          fbUser.email,
-          fbUser.displayName,
-          fbUser.phoneNumber
-        );
-        setUser(userDoc);
-        setIsDemoUser(false);
-        setAuthModalOpen(false);
-      } catch (err) {
-        console.error('Email sign in failed:', err);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      // Local fallback
-      await signInDemo(email, email.split('@')[0] || 'Student');
-    }
-  }, []);
+  const loadProfile = async (fbUser: FirebaseUser, name?: string) => {
+    const userDoc = await FirestoreService.createOrGetUser(fbUser.uid, fbUser.email, name || fbUser.displayName, fbUser.phoneNumber);
+    setUser(userDoc);
+    setIsDemoUser(false);
+    setEmailVerified(fbUser.emailVerified);
+    setAuthModalOpen(false);
+  };
 
-  const signUpWithEmail = useCallback(async (email: string, pass: string, name: string, gradePreference = '10') => {
-    setLoading(true);
-    if (isFirebaseConfigured && auth) {
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, email, pass);
-        const fbUser = cred.user;
-        await fbUpdateProfile(fbUser, { displayName: name });
-        const userDoc = await FirestoreService.createOrGetUser(
-          fbUser.uid,
-          fbUser.email,
-          name,
-          null
-        );
-        userDoc.grade_preference = gradePreference;
-        await FirestoreService.updateUserProfile(userDoc.userId, {
-          grade_preference: gradePreference,
-        });
-        setUser(userDoc);
-        setIsDemoUser(false);
-        setAuthModalOpen(false);
-      } catch (err) {
-        console.error('Email sign up failed:', err);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      await signInDemo(email, name, 'student', gradePreference);
-    }
-  }, []);
-
-  const sendPasswordReset = useCallback(async (email: string) => {
-    if (isFirebaseConfigured && auth) {
-      await sendPasswordResetEmail(auth, email);
-    } else {
-      console.info(`[Demo Mode] Password reset link simulated for ${email}`);
-    }
-  }, []);
-
-  // FR-1 Mobile OTP. Demo mode (no Firebase keys) accepts any 6-digit code.
-  const phoneConfirmation = useRef<ConfirmationResult | null>(null);
-  const recaptchaVerifier = useRef<RecaptchaVerifier | null>(null);
-  const demoPhone = useRef<string | null>(null);
-
-  const sendPhoneOtp = useCallback(async (phoneE164: string, recaptchaContainerId: string) => {
-    if (!isFirebaseConfigured || !auth) {
-      demoPhone.current = phoneE164;
-      return;
-    }
-    recaptchaVerifier.current?.clear();
-    recaptchaVerifier.current = new RecaptchaVerifier(auth, recaptchaContainerId, { size: 'invisible' });
-    try {
-      phoneConfirmation.current = await signInWithPhoneNumber(auth, phoneE164, recaptchaVerifier.current);
-    } catch (err) {
-      recaptchaVerifier.current.clear();
-      recaptchaVerifier.current = null;
-      throw err;
-    }
-  }, []);
-
-  const verifyPhoneOtp = useCallback(async (code: string) => {
-    if (!isFirebaseConfigured || !auth) {
-      if (!/^\d{6}$/.test(code) || !demoPhone.current) throw new Error('Enter the 6-digit code.');
-      const demoId = 'demo-user-' + Math.random().toString(36).substring(2, 9);
-      const demoUser = await FirestoreService.createOrGetUser(demoId, null, 'Student', demoPhone.current);
-      StorageService.setLocalUser(demoUser);
-      setUser(demoUser);
-      setIsDemoUser(true);
-      setAuthModalOpen(false);
-      return;
-    }
-    if (!phoneConfirmation.current) throw new Error('Request a code first.');
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    if (!isFirebaseConfigured || !auth) return signInDemo(email, email.split('@')[0] || 'Student');
     setLoading(true);
     try {
-      const cred = await phoneConfirmation.current.confirm(code);
-      const userDoc = await FirestoreService.createOrGetUser(
-        cred.user.uid,
-        cred.user.email,
-        cred.user.displayName,
-        cred.user.phoneNumber
-      );
-      setUser(userDoc);
-      setIsDemoUser(false);
-      setAuthModalOpen(false);
-      phoneConfirmation.current = null;
-      recaptchaVerifier.current?.clear();
-      recaptchaVerifier.current = null;
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      await loadProfile(cred.user);
     } finally {
       setLoading(false);
     }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const signUpWithEmail = useCallback(async (name: string, email: string, password: string) => {
+    if (!isFirebaseConfigured || !auth) return signInDemo(email, name);
+    setLoading(true);
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await fbUpdateProfile(cred.user, { displayName: name.trim() });
+      await sendEmailVerification(cred.user);
+      await loadProfile(cred.user, name.trim());
+    } finally {
+      setLoading(false);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sendPasswordReset = useCallback(async (email: string) => {
+    if (isFirebaseConfigured && auth) await sendPasswordResetEmail(auth, email.trim());
+  }, []);
+
+  const resendVerification = useCallback(async () => {
+    if (auth?.currentUser) await sendEmailVerification(auth.currentUser);
+  }, []);
+
+  const refreshEmailVerified = useCallback(async () => {
+    const current = auth?.currentUser;
+    if (!current) return true;
+    await current.reload();
+    await current.getIdToken(true); // the parent-consent check reads email_verified from the token
+    setEmailVerified(current.emailVerified);
+    return current.emailVerified;
+  }, []);
+
+  // Consent is recorded by Cloud Functions; the profile is re-read so the gate opens with server truth.
+  const reloadUser = async () => {
+    if (!auth?.currentUser) return;
+    const fresh = await FirestoreService.getUserProfile(auth.currentUser.uid);
+    if (fresh) setUser(fresh);
+  };
+  const saveDemoConsent = (consent: UserConsent) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, consent };
+      StorageService.setLocalUser(next);
+      return next;
+    });
+  };
+
+  const giveAdultConsent = useCallback(async (language: NoticeLang) => {
+    if (!isFirebaseConfigured || !functions) {
+      return saveDemoConsent({ status: 'granted', age_group: 'adult', method: 'self', notice_version: NOTICE_VERSION, language, granted_at: Date.now() });
+    }
+    await httpsCallable(functions, 'recordAdultConsent')({ declaredAdult: true, agreed: true, language });
+    await reloadUser();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const requestParentConsent = useCallback(async (parentName: string, parentEmail: string, language: NoticeLang) => {
+    if (!isFirebaseConfigured || !functions) {
+      saveDemoConsent({
+        status: 'pending_parent', age_group: 'child', method: 'parent', notice_version: NOTICE_VERSION, language,
+        parent_name: parentName, parent_email: parentEmail, requested_at: Date.now(),
+      });
+      return parentEmail;
+    }
+    const res = await httpsCallable<unknown, { parentEmail: string }>(functions, 'requestParentalConsent')({ parentName, parentEmail, language });
+    await reloadUser();
+    return res.data.parentEmail;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const simulateParentApproval = useCallback(async () => {
+    if (isFirebaseConfigured) return;
+    setUser((prev) => {
+      if (!prev?.consent) return prev;
+      const next = { ...prev, consent: { ...prev.consent, status: 'granted' as const, granted_at: Date.now() } };
+      StorageService.setLocalUser(next);
+      return next;
+    });
   }, []);
 
   const signInDemo = useCallback(async (
@@ -253,12 +242,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     role: 'student' | 'admin' = 'student',
     grade?: string
   ) => {
+    if (isFirebaseConfigured) throw new Error('Demo accounts are disabled when Firebase is configured.');
     setLoading(true);
     const demoId = 'demo-user-' + Math.random().toString(36).substring(2, 9);
     const demoUser = await FirestoreService.createOrGetUser(demoId, email, name, null);
     demoUser.role = role;
     if (grade) demoUser.grade_preference = grade;
     if (role === 'admin') demoUser.onboarding_completed = true;
+    else bumpDemoStat('registrations');
     StorageService.setLocalUser(demoUser);
     setUser(demoUser);
     setIsDemoUser(true);
@@ -332,22 +323,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsDemoUser(false);
   }, [user, isDemoUser]);
 
-  const reauthProviderId = isFirebaseConfigured && auth?.currentUser
-    ? auth.currentUser.providerData[0]?.providerId || null
-    : null;
+  const reauthProviderId = isFirebaseConfigured && auth?.currentUser ? auth.currentUser.providerData[0]?.providerId || null : null;
 
   const reauthenticate = useCallback(async (password?: string) => {
     const current = auth?.currentUser;
     if (!current) throw new Error('You are signed out. Please sign in again.');
-    const providerId = current.providerData[0]?.providerId;
-
-    if (providerId === 'google.com' && googleProvider) {
-      await reauthenticateWithPopup(current, googleProvider);
-    } else if (providerId === 'password' && current.email) {
-      if (!password) throw new Error('Enter your password.');
+    if (current.providerData[0]?.providerId === 'password') {
+      if (!password || !current.email) throw new Error('Enter your password.');
       await reauthenticateWithCredential(current, EmailAuthProvider.credential(current.email, password));
-    } else {
-      throw new Error('Sign out, sign back in with your mobile number, then delete your account within 5 minutes.');
+    } else if (googleProvider) {
+      await reauthenticateWithPopup(current, googleProvider);
     }
     await current.getIdToken(true);
   }, []);
@@ -367,8 +352,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithEmail,
         signUpWithEmail,
         sendPasswordReset,
-        sendPhoneOtp,
-        verifyPhoneOtp,
+        emailVerified,
+        resendVerification,
+        refreshEmailVerified,
+        giveAdultConsent,
+        requestParentConsent,
+        simulateParentApproval,
         signInDemo,
         signOut,
         updateSettings,

@@ -16,7 +16,7 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items }) => {
     <nav aria-label="Breadcrumb" className="flex items-center space-x-1 text-xs text-[#6B7280] py-2 overflow-x-auto">
       <button
         onClick={items[0]?.onClick}
-        className="flex items-center gap-1 hover:text-[#3B4FE0] transition-colors cursor-pointer shrink-0"
+        className="flex items-center gap-1 hover:text-[color:var(--brand)] transition-colors cursor-pointer shrink-0"
       >
         <Home className="w-3.5 h-3.5" />
         <span>Home</span>
@@ -26,13 +26,13 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items }) => {
         <React.Fragment key={index}>
           <ChevronRight className="w-3.5 h-3.5 text-[#6B7280]/50 shrink-0" />
           {item.active || !item.onClick ? (
-            <span className="font-semibold text-[#1E2233] truncate max-w-[200px]" aria-current="page">
+            <span className="font-bold text-[#1E2233] truncate max-w-[200px]" aria-current="page">
               {item.label}
             </span>
           ) : (
             <button
               onClick={item.onClick}
-              className="hover:text-[#3B4FE0] transition-colors cursor-pointer truncate max-w-[150px]"
+              className="hover:text-[color:var(--brand)] transition-colors cursor-pointer truncate max-w-[150px]"
             >
               {item.label}
             </button>

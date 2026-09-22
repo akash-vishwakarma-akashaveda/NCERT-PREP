@@ -1,5 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { requireConsent } from './consent';
+import { getPlatformConfig } from './platform';
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -7,7 +9,6 @@ if (admin.apps.length === 0) {
 
 const db = admin.firestore();
 
-const MAX_PER_HOUR = 5;
 const WINDOW_MS = 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 1000;
 
@@ -24,6 +25,12 @@ export const submitFeedback = functions
     }
 
     const userId = context.auth.uid;
+    const { features, limits } = await getPlatformConfig();
+    if (!features.feedback) {
+      throw new functions.https.HttpsError('unavailable', 'Feedback is switched off right now. Please try again later.');
+    }
+    const MAX_PER_HOUR = limits.feedbackPerHour;
+    await requireConsent(userId);
     const youtubeId = typeof data?.youtubeId === 'string' ? data.youtubeId.trim() : '';
     const message = typeof data?.message === 'string' ? data.message.trim() : '';
 

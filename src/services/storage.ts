@@ -30,17 +30,24 @@ export const StorageService = {
     }
   },
 
-  // Last watched video
-  getLastWatchedVideo(): string | null {
+  // Last watched video (scoped per user for student isolation)
+  getLastWatchedVideo(userId?: string): string | null {
     try {
+      if (userId) {
+        const userSpecific = localStorage.getItem(`${STORAGE_KEYS.LAST_WATCHED}_${userId}`);
+        if (userSpecific) return userSpecific;
+      }
       return localStorage.getItem(STORAGE_KEYS.LAST_WATCHED);
     } catch {
       return null;
     }
   },
 
-  setLastWatchedVideo(youtubeId: string): void {
+  setLastWatchedVideo(userId: string | undefined, youtubeId: string): void {
     try {
+      if (userId) {
+        localStorage.setItem(`${STORAGE_KEYS.LAST_WATCHED}_${userId}`, youtubeId);
+      }
       localStorage.setItem(STORAGE_KEYS.LAST_WATCHED, youtubeId);
     } catch (e) {
       console.warn('Failed to save last watched:', e);
@@ -128,6 +135,10 @@ export const StorageService = {
       localStorage.removeItem(`${STORAGE_KEYS.FEEDBACK_TIMESTAMPS}${userId}`);
       localStorage.removeItem(STORAGE_KEYS.LOCAL_USER);
       localStorage.removeItem(STORAGE_KEYS.LAST_WATCHED);
+      localStorage.removeItem(`${STORAGE_KEYS.LAST_WATCHED}_${userId}`);
+      localStorage.removeItem(`quickprep_xp_history_${userId}`);
+      localStorage.removeItem(`quickprep_xp_total_${userId}`);
+      localStorage.removeItem(`ncert_prep_onboarded_${userId}`);
     } catch (e) {
       console.warn('Failed to clear user data:', e);
     }

@@ -5,15 +5,24 @@
  *   FIREBASE_PROJECT_ID  your Firebase project id
  *   SA_CLIENT_EMAIL      service account email with the "Cloud Datastore User" role
  *   SA_PRIVATE_KEY       the service account private key (the "private_key" value from its JSON key)
+ *   SHEET_NAME           optional: tab to read (default: the first tab, never "whichever tab is open")
  * Credentials live in Script Properties, never in this source file.
  *
- * Sheet header row (order does not matter, names are matched case-insensitively):
- *   class | Class Numeral | subject | book | chapter | Chapter Title | YT Vid Title | YT Vid ID
+ * The sheet is the source of truth for lesson content. Header names are matched case-insensitively,
+ * column order does not matter, and every other column in the sheet is ignored.
+ *   Required: class | Class Numeral | subject | book | chapter | Chapter Title | YT Vid Title | YT Vid ID
+ *   Optional: YT Vid Published   -> yt_public  (true only for "PUBLISH_OK…"; students never see the rest)
+ *             url                -> pdf_url    (NCERT chapter PDF)
+ *             Timestamps         -> timestamps ("mm:ss - topic" lines, shown as "What you'll learn")
+ *             English Chapter Name is used as chapter_name when Chapter Title is empty.
  *
  * Guarantees:
  *   - Keyed on YT Vid ID: existing documents are updated in place, new rows create documents.
+ *   - Sheet-owned fields are overwritten on every sync; edit them in the sheet, not the admin panel.
  *   - `isActive` is NEVER written for existing documents (admin moderation survives every re-sync).
  *     New documents are created with isActive = true and isPremium = false (SRS defaults).
+ *   - "Chapter1" is stored as "Chapter 1" so spacing differences never split a chapter.
+ *   - video_title keeps only the part before the first " | " (the SEO suffix is dropped).
  *   - Writes go through Firestore `documents:commit` in batches of up to 500.
  */
 
@@ -27,13 +36,20 @@ var COLUMN_MAP = {
   'yt vid title': 'video_title',
   'yt vid id': 'youtube_id',
 };
+var OPTIONAL_COLUMN_MAP = {
+  'yt vid published': 'published_raw',
+  'url': 'pdf_url',
+  'timestamps': 'timestamps',
+  'english chapter name': 'english_chapter_name',
+};
 
 var SHEET_FIELDS = ['class_display', 'class_sort', 'subject', 'textbook', 'chapter_id', 'chapter_name', 'video_title'];
+var OPTIONAL_STRING_FIELDS = ['pdf_url', 'timestamps'];
 var COMMIT_BATCH_SIZE = 500;
 var LOOKUP_BATCH_SIZE = 300;
 
 function onOpen() {
-  SpreadsheetApp.getUi().createMenu('QuickPrep').addItem('Sync videos to Firestore', 'syncSheetToFirestore').addToUi();
+  SpreadsheetApp.getUi().createMenu('NCERT Prep').addItem('Sync videos to Firestore', 'syncSheetToFirestore').addToUi();
 }
 
 function syncSheetToFirestore() {
@@ -54,6 +70,15 @@ function syncSheetToFirestore() {
       fields[key] = { stringValue: row[key] };
     });
     var mask = SHEET_FIELDS.slice();
+    OPTIONAL_STRING_FIELDS.forEach(function (key) {
+      if (row[key] === undefined) return; // column not in this sheet: leave the stored value alone
+      fields[key] = { stringValue: row[key] };
+      mask.push(key);
+    });
+    if (row.published_raw !== undefined) {
+      fields.yt_public = { booleanValue: /^PUBLISH_OK/i.test(row.published_raw) };
+      mask.push('yt_public');
+    }
 
     if (!existing[row.youtube_id]) {
       fields.isActive = { booleanValue: true };
@@ -90,13 +115,18 @@ function getConfig_() {
 }
 
 function readRows_() {
-  var values = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getDataRange().getDisplayValues();
+  var book = SpreadsheetApp.getActiveSpreadsheet();
+  var name = PropertiesService.getScriptProperties().getProperty('SHEET_NAME');
+  var sheet = name ? book.getSheetByName(name) : book.getSheets()[0];
+  if (!sheet) throw new Error('Sheet "' + name + '" not found. Fix SHEET_NAME in Script Properties.');
+  var values = sheet.getDataRange().getDisplayValues();
   if (values.length < 2) return [];
 
   var headerIndex = {};
   values[0].forEach(function (header, idx) {
-    var key = COLUMN_MAP[String(header).trim().replace(/\s+/g, ' ').toLowerCase()];
-    if (key) headerIndex[key] = idx;
+    var name = String(header).trim().replace(/\s+/g, ' ').toLowerCase();
+    var key = COLUMN_MAP[name] || OPTIONAL_COLUMN_MAP[name];
+    if (key && headerIndex[key] === undefined) headerIndex[key] = idx;
   });
 
   var missing = Object.keys(COLUMN_MAP)
@@ -114,6 +144,10 @@ function readRows_() {
     });
 
     if (!row.youtube_id) continue;
+    row.chapter_id = row.chapter_id.replace(/^chapter\s*/i, 'Chapter ');
+    row.video_title = row.video_title.split(' | ')[0].trim() || row.video_title;
+    if (!row.chapter_name && row.english_chapter_name) row.chapter_name = row.english_chapter_name;
+    delete row.english_chapter_name;
     if (!/^[A-Za-z0-9_-]{11}$/.test(row.youtube_id)) {
       Logger.log('Row ' + (r + 1) + ': skipped, invalid YT Vid ID "' + row.youtube_id + '"');
       continue;

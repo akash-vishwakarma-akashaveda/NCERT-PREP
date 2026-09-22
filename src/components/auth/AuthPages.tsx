@@ -1,668 +1,263 @@
 import React, { useState } from 'react';
-import {
-  X,
-  Mail,
-  Lock,
-  User,
-  GraduationCap,
-  Sparkles,
-  ArrowRight,
-  Shield,
-  CheckCircle2,
-  AlertCircle,
-  KeyRound,
-  LogIn,
-  UserPlus,
-  Smartphone,
-} from 'lucide-react';
+import { X, AlertCircle, Shield, Sparkles, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { LogoMark } from '../common/Logo';
 import { useAuth } from '../../context/AuthContext';
 import { isFirebaseConfigured } from '../../services/firebase';
 
 interface AuthPagesProps {
-  initialMode?: 'signin' | 'signup' | 'forgot' | 'phone';
   onSuccess?: () => void;
   isModal?: boolean;
 }
 
-export const AuthPages: React.FC<AuthPagesProps> = ({
-  initialMode = 'signin',
-  onSuccess,
-  isModal = true,
-}) => {
-  const {
-    authModalOpen,
-    setAuthModalOpen,
-    signInWithGoogle,
-    signInWithEmail,
-    signUpWithEmail,
-    sendPasswordReset,
-    sendPhoneOtp,
-    verifyPhoneOtp,
-    signInDemo,
-  } = useAuth();
+type Mode = 'choose' | 'signin' | 'signup' | 'forgot';
 
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot' | 'phone'>(initialMode);
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+// Popup closed or cancelled by the user: not an error worth showing.
+const QUIET_CODES = ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'];
+const MESSAGES: Record<string, string> = {
+  'auth/popup-blocked': 'Your browser blocked the Google window. Allow pop-ups for this site and try again.',
+  'auth/network-request-failed': 'No internet connection. Check your network and try again.',
+  'auth/unauthorized-domain': 'This website is not yet allowed for sign-in. Please contact support.',
+  'auth/invalid-credential': 'Email or password is incorrect.',
+  'auth/wrong-password': 'Email or password is incorrect.',
+  'auth/user-not-found': 'Email or password is incorrect.',
+  'auth/email-already-in-use': 'An account with this email already exists. Sign in instead, or reset your password.',
+  'auth/invalid-email': 'Enter a valid email address.',
+  'auth/weak-password': 'Use at least 8 characters for your password.',
+  'auth/too-many-requests': 'Too many attempts. Wait a few minutes and try again.',
+};
+
+function friendlyError(err: unknown): string | null {
+  const code = (err as { code?: string })?.code || '';
+  if (QUIET_CODES.includes(code)) return null;
+  return MESSAGES[code] || (err as Error)?.message || 'Sign-in did not complete. Please try again.';
+}
+
+const input =
+  'w-full px-4 py-3 text-sm font-bold border-2 border-[#E3E5EC] rounded-2xl bg-[#F7F8FC] focus:bg-white focus:border-[color:var(--brand)] outline-none';
+const label = 'block text-xs font-extrabold text-[#1E2233] mb-1.5';
+
+const GoogleMark = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" />
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
+    <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z" />
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.97 10.97 0 0 0 12 1 11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
+  </svg>
+);
+
+/**
+ * Sign-in / registration through Firebase Auth: Google, or email + password.
+ * The DPDP notice and consent (with parental consent for under-18s) follow immediately after,
+ * in the ConsentGate, before any other data is processed.
+ */
+export const AuthPages: React.FC<AuthPagesProps> = ({ onSuccess, isModal = true }) => {
+  const { authModalOpen, setAuthModalOpen, signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, signInDemo } = useAuth();
+  const [mode, setMode] = useState<Mode>('choose');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [grade, setGrade] = useState('10');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   if (isModal && !authModalOpen) return null;
 
-  const handleClose = () => {
+  const go = (m: Mode) => {
+    setMode(m);
+    setError(null);
+    setInfo(null);
+  };
+  const close = () => {
+    go('choose');
+    setPassword('');
     setAuthModalOpen(false);
-    setError(null);
-    setSuccessMessage(null);
-    if (onSuccess) onSuccess();
   };
 
-  const handleGoogleSignIn = async () => {
+  const run = async (action: () => Promise<void>) => {
+    setSubmitting(true);
+    setError(null);
     try {
-      setSubmitting(true);
-      setError(null);
-      await signInWithGoogle();
-      handleClose();
-    } catch (err: unknown) {
-      const e = err as Error;
-      setError(e.message || 'Google sign-in was cancelled.');
+      await action();
+      onSuccess?.();
+    } catch (err) {
+      setError(friendlyError(err));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Please enter both email and password.');
-      return;
+    if (mode === 'signin') return run(() => signInWithEmail(email, password));
+    if (mode === 'signup') {
+      if (name.trim().length < 2) return setError('Enter your name.');
+      if (password.length < 8) return setError('Use at least 8 characters for your password.');
+      return run(() => signUpWithEmail(name, email, password));
     }
-    setSubmitting(true);
-    setError(null);
-    try {
-      await signInWithEmail(email, password);
-      handleClose();
-    } catch (err: unknown) {
-      const e = err as Error;
-      setError(e.message || 'Failed to sign in. Please verify your credentials.');
-    } finally {
-      setSubmitting(false);
+    if (mode === 'forgot') {
+      return run(async () => {
+        await sendPasswordReset(email);
+        setInfo('If an account exists for this email, a reset link is on its way. Check your inbox and spam folder.');
+      });
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!fullName.trim() || !email || !password) {
-      setError('Please fill in all required registration fields.');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
-    try {
-      await signUpWithEmail(email, password, fullName.trim(), grade);
-      setSuccessMessage('Account created successfully! Loading your curriculum...');
-      setTimeout(() => {
-        handleClose();
-      }, 800);
-    } catch (err: unknown) {
-      const e = err as Error;
-      setError(e.message || 'Registration failed. Email may already be in use.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
-    try {
-      await sendPasswordReset(email);
-      setSuccessMessage(`Password reset instructions sent to ${email}. Check your inbox.`);
-    } catch (err: unknown) {
-      const e = err as Error;
-      setError(e.message || 'Failed to send reset link.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const toE164 = (raw: string): string | null => {
-    const trimmed = raw.replace(/[\s-]/g, '');
-    if (/^\+[1-9]\d{7,14}$/.test(trimmed)) return trimmed;
-    if (/^[6-9]\d{9}$/.test(trimmed)) return `+91${trimmed}`;
-    return null;
-  };
-
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const e164 = toE164(phone);
-    if (!e164) {
-      setError('Enter a valid 10-digit Indian mobile number, or a full number starting with +.');
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
-    setSuccessMessage(null);
-    try {
-      await sendPhoneOtp(e164, 'recaptcha-container');
-      setOtpSent(true);
-      setSuccessMessage(`We sent a 6-digit code to ${e164}.`);
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Could not send the code. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!/^\d{6}$/.test(otp)) {
-      setError('Enter the 6-digit code from the SMS.');
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
-    try {
-      await verifyPhoneOtp(otp);
-      setOtp('');
-      setOtpSent(false);
-      handleClose();
-    } catch (err: unknown) {
-      setError((err as Error).message || 'That code is incorrect or expired.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDemoLogin = async (role: 'student' | 'admin') => {
-    setSubmitting(true);
-    setError(null);
-    try {
-      if (role === 'admin') {
-        await signInDemo('admin@ncertprep.edu', 'Curriculum Director', 'admin');
-      } else {
-        await signInDemo('aarav.sharma@ncertprep.demo', 'Aarav Sharma', 'student');
-      }
-      handleClose();
-    } catch (err: unknown) {
-      const e = err as Error;
-      setError(e.message || 'Demo login failed.');
-    } finally {
-      setSubmitting(false);
-    }
+  const titles: Record<Mode, [string, string]> = {
+    choose: ['Welcome to NCERT Prep', 'Sign in or create your free account to keep your progress, streak and saved lessons on every device.'],
+    signin: ['Sign in with email', 'Use the email and password you registered with.'],
+    signup: ['Create your account', "We'll email you a link to verify your address. Next, you'll see our privacy notice and give consent."],
+    forgot: ['Reset your password', "Enter your account's email and we'll send you a reset link."],
   };
 
   const content = (
-    <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-[#E3E5EC] overflow-hidden">
-      {/* Header */}
-      <div className="px-6 pt-6 pb-4 border-b border-[#E3E5EC] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#3B4FE0] text-white flex items-center justify-center shadow-xs">
-            <GraduationCap className="w-5 h-5" />
+    <div className="relative w-full max-w-[440px] max-h-[92vh] overflow-y-auto bg-white rounded-[32px] border-[3px] border-[color:var(--card-line)] shadow-[0_8px_0_#E3E5EC] p-6 sm:p-[30px] flex flex-col gap-4 animate-pop-soft">
+      {isModal && (
+        <button
+          onClick={close}
+          aria-label="Close"
+          className="absolute right-5 top-5 w-9 h-9 flex items-center justify-center text-[#6B7280] hover:text-[#1E2233] bg-[color:var(--page)] border-2 border-[#E3E5EC] rounded-xl cursor-pointer"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
+
+      {mode === 'choose' ? (
+        <LogoMark className="w-[52px] h-[52px]" />
+      ) : (
+        <button onClick={() => go(mode === 'forgot' ? 'signin' : 'choose')} className="self-start inline-flex items-center gap-1 text-xs font-extrabold text-[#6B7280] hover:text-[#1E2233] cursor-pointer">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+      )}
+      <div className="space-y-1.5 pr-8">
+        <h2 className="text-[27px] leading-tight text-[#1E2233]">{titles[mode][0]}</h2>
+        <p className="text-[13px] font-semibold leading-relaxed text-[#6B7280]">{titles[mode][1]}</p>
+      </div>
+
+      {error && (
+        <p role="alert" className="p-3 text-xs font-bold text-[#8A2E17] bg-[#FFE9E2] border-2 border-[#FFC3B1] rounded-[14px] flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> {error}
+        </p>
+      )}
+      {info && (
+        <p role="status" className="p-3 text-xs font-bold text-[#0B5E50] bg-[#E7F7F1] border-2 border-[#A9E6D3] rounded-[14px] flex items-start gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> {info}
+        </p>
+      )}
+
+      {mode === 'choose' ? (
+        <>
+          <button
+            onClick={() => run(signInWithGoogle)}
+            disabled={submitting}
+            className="btn-3d [--edge:#E3E5EC] w-full flex items-center justify-center gap-3 p-3.5 rounded-2xl bg-white border-[3px] border-[#E3E5EC] hover:bg-[#F7F8FC] text-sm font-extrabold text-[#1E2233] cursor-pointer disabled:opacity-60"
+          >
+            <GoogleMark />
+            {submitting ? 'Opening Google…' : 'Continue with Google'}
+          </button>
+          <div className="flex items-center gap-3 text-[11px] font-extrabold text-[#9AA1B4]">
+            <span className="flex-1 border-t-2 border-[color:var(--card-line)]" /> OR <span className="flex-1 border-t-2 border-[color:var(--card-line)]" />
           </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <button onClick={() => go('signup')} className="btn-3d [--edge:var(--brand-edge)] flex items-center justify-center gap-2 p-3 rounded-2xl bg-[color:var(--brand)] text-white text-[13px] font-extrabold cursor-pointer">
+              <Mail className="w-4 h-4" /> Register with email
+            </button>
+            <button onClick={() => go('signin')} className="flex items-center justify-center p-3 rounded-2xl bg-[color:var(--brand-soft)] border-2 border-[color:var(--brand-line)] text-[color:var(--brand)] text-[13px] font-extrabold cursor-pointer">
+              Sign in with email
+            </button>
+          </div>
+        </>
+      ) : (
+        <form onSubmit={submit} className="space-y-3.5" noValidate>
+          {mode === 'signup' && (
+            <div>
+              <label htmlFor="auth-name" className={label}>Your name</label>
+              <input id="auth-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={60} className={input} required />
+            </div>
+          )}
           <div>
-            <h2 className="text-base font-bold text-[#1E2233]">
-              {mode === 'signin' && 'Sign in to NCERT Prep'}
-              {mode === 'signup' && 'Create Your Student Account'}
-              {mode === 'forgot' && 'Reset Your Password'}
-              {mode === 'phone' && 'Sign in with Mobile OTP'}
-            </h2>
-            <p className="text-xs text-[#6B7280]">
-              {mode === 'signin' && 'Access structured revision, streak & focus tools'}
-              {mode === 'signup' && 'Select your class to personalize your curriculum'}
-              {mode === 'forgot' && 'Enter your email to receive recovery instructions'}
-              {mode === 'phone' && 'We will text you a one-time code'}
+            <label htmlFor="auth-email" className={label}>Email address</label>
+            <input id="auth-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className={input} required />
+          </div>
+          {mode !== 'forgot' && (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="auth-password" className="text-xs font-extrabold text-[#1E2233]">Password</label>
+                {mode === 'signin' && (
+                  <button type="button" onClick={() => go('forgot')} className="text-[11.5px] font-extrabold text-[color:var(--brand)] cursor-pointer">
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+              <input
+                id="auth-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                minLength={mode === 'signup' ? 8 : undefined}
+                className={input}
+                required
+              />
+              {mode === 'signup' && <p className="mt-1 text-[11px] font-semibold text-[#6B7280]">At least 8 characters.</p>}
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={submitting || !email || (mode !== 'forgot' && !password)}
+            className="btn-3d [--edge:var(--brand-edge)] w-full p-3.5 rounded-2xl bg-[color:var(--brand)] hover:bg-[color:var(--brand-hover)] text-white text-sm font-extrabold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? 'Please wait…' : mode === 'signup' ? 'Create account' : mode === 'signin' ? 'Sign in' : 'Send reset link'}
+          </button>
+          {mode !== 'forgot' && (
+            <p className="text-center text-xs font-bold text-[#6B7280]">
+              {mode === 'signin' ? 'New here? ' : 'Already registered? '}
+              <button type="button" onClick={() => go(mode === 'signin' ? 'signup' : 'signin')} className="font-extrabold text-[color:var(--brand)] cursor-pointer">
+                {mode === 'signin' ? 'Create an account' : 'Sign in'}
+              </button>
             </p>
+          )}
+        </form>
+      )}
+
+      {!isFirebaseConfigured && mode === 'choose' && (
+        <div className="rounded-[18px] bg-[#FFF6E2] border-2 border-dashed border-[#FFD97A] p-3.5 space-y-2.5">
+          <p className="text-[11.5px] font-bold text-[#8A5A14]">Development mode: no Firebase keys, so accounts live only in this browser.</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => run(() => signInDemo('aarav.sharma@ncertprep.demo', 'Aarav Sharma', 'student'))}
+              disabled={submitting}
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[14px] bg-white border-2 border-[#E3E5EC] text-xs font-extrabold text-[#1E2233] cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[color:var(--brand)]" /> Demo student
+            </button>
+            <button
+              onClick={() => run(() => signInDemo('admin@ncertprep.demo', 'Demo Admin', 'admin'))}
+              disabled={submitting}
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-[14px] bg-[#1E2233] text-xs font-extrabold text-white cursor-pointer"
+            >
+              <Shield className="w-3.5 h-3.5" /> Demo admin
+            </button>
           </div>
         </div>
+      )}
 
-        {isModal && (
-          <button
-            onClick={handleClose}
-            className="p-1.5 text-[#6B7280] hover:text-[#1E2233] hover:bg-[#F5F6FA] rounded-xl transition-colors cursor-pointer"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
-      </div>
-
-      {/* Mode Switcher Tabs */}
-      <div className="flex border-b border-[#E3E5EC] bg-[#F5F6FA] p-1 gap-1">
-        <button
-          type="button"
-          onClick={() => {
-            setMode('signin');
-            setError(null);
-            setSuccessMessage(null);
-          }}
-          className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-            mode === 'signin'
-              ? 'bg-white text-[#3B4FE0] shadow-xs'
-              : 'text-[#6B7280] hover:text-[#1E2233]'
-          }`}
-        >
-          <LogIn className="w-3.5 h-3.5" />
-          <span>Sign In</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setMode('signup');
-            setError(null);
-            setSuccessMessage(null);
-          }}
-          className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-            mode === 'signup'
-              ? 'bg-white text-[#3B4FE0] shadow-xs'
-              : 'text-[#6B7280] hover:text-[#1E2233]'
-          }`}
-        >
-          <UserPlus className="w-3.5 h-3.5" />
-          <span>Create Account</span>
-        </button>
-      </div>
-
-      {/* Body */}
-      <div className="p-6 space-y-4">
-        {error && (
-          <div className="p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="p-3 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-            <span>{successMessage}</span>
-          </div>
-        )}
-
-        {/* 1. SIGN IN FORM */}
-        {mode === 'signin' && (
-          <form onSubmit={handleSignIn} className="space-y-3.5">
-            <div>
-              <label className="block text-xs font-semibold text-[#1E2233] mb-1">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  required
-                  placeholder="student@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-[#E3E5EC] rounded-xl focus:border-[#3B4FE0] focus:ring-1 focus:ring-[#3B4FE0] outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-[#1E2233]">
-                  Password
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('forgot');
-                    setError(null);
-                    setSuccessMessage(null);
-                  }}
-                  className="text-[11px] text-[#3B4FE0] hover:underline cursor-pointer"
-                >
-                  Forgot password?
-                </button>
-              </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  required
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-[#E3E5EC] rounded-xl focus:border-[#3B4FE0] focus:ring-1 focus:ring-[#3B4FE0] outline-none"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-2.5 text-xs sm:text-sm font-bold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <span>{submitting ? 'Signing In...' : 'Sign In'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            {/* Divider */}
-            <div className="relative flex py-2 items-center">
-              <div className="grow border-t border-[#E3E5EC]"></div>
-              <span className="shrink mx-3 text-[10px] uppercase tracking-wider text-[#6B7280] font-semibold">
-                Or Continue With
-              </span>
-              <div className="grow border-t border-[#E3E5EC]"></div>
-            </div>
-
-            {/* Google button */}
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={submitting}
-              className="w-full flex items-center justify-center gap-2.5 px-4 py-2 text-xs sm:text-sm font-semibold text-[#1E2233] bg-white hover:bg-[#F5F6FA] border border-[#E3E5EC] rounded-xl shadow-2xs transition-all cursor-pointer"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                />
-              </svg>
-              <span>Sign in with Google</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setMode('phone');
-                setError(null);
-                setSuccessMessage(null);
-              }}
-              disabled={submitting}
-              className="w-full flex items-center justify-center gap-2.5 px-4 py-2 text-xs sm:text-sm font-semibold text-[#1E2233] bg-white hover:bg-[#F5F6FA] border border-[#E3E5EC] rounded-xl shadow-2xs transition-all cursor-pointer"
-            >
-              <Smartphone className="w-4 h-4 text-[#12A594]" />
-              <span>Continue with Mobile OTP</span>
-            </button>
-
-            {/* Quick Demo Logins for fast testing */}
-            <div className="pt-2 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('student')}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#042C53] bg-[#E6F1FB] hover:bg-[#D5E6F8] border border-[#CBE0F7] rounded-xl transition-colors cursor-pointer"
-                title="Log in as Demo Student"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#3B4FE0]" />
-                <span>Demo Student</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('admin')}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition-colors cursor-pointer"
-                title="Log in as Administrator to manage content"
-              >
-                <Shield className="w-3.5 h-3.5 text-slate-700" />
-                <span>Demo Admin</span>
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* 2. SIGN UP FORM */}
-        {mode === 'signup' && (
-          <form onSubmit={handleSignUp} className="space-y-3.5">
-            <div>
-              <label className="block text-xs font-semibold text-[#1E2233] mb-1">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Aarav Sharma"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-[#E3E5EC] rounded-xl focus:border-[#3B4FE0] focus:ring-1 focus:ring-[#3B4FE0] outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#1E2233] mb-1">
-                Select Your Class
-              </label>
-              <div className="relative">
-                <GraduationCap className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
-                <select
-                  value={grade}
-                  onChange={(e) => setGrade(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-[#E3E5EC] rounded-xl focus:border-[#3B4FE0] focus:ring-1 focus:ring-[#3B4FE0] outline-none bg-white"
-                >
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((g) => (
-                    <option key={g} value={g.toString().padStart(2, '0')}>
-                      Class {g} {g <= 5 ? '(Primary Foundation)' : g <= 10 ? '(Middle & Boards)' : '(Senior Secondary)'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#1E2233] mb-1">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  required
-                  placeholder="student@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-[#E3E5EC] rounded-xl focus:border-[#3B4FE0] focus:ring-1 focus:ring-[#3B4FE0] outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#1E2233] mb-1">
-                Create Password
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  required
-                  placeholder="Minimum 6 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-[#E3E5EC] rounded-xl focus:border-[#3B4FE0] focus:ring-1 focus:ring-[#3B4FE0] outline-none"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-2.5 text-xs sm:text-sm font-bold text-white bg-[#12A594] hover:bg-[#0E8576] rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <span>{submitting ? 'Creating Account...' : 'Complete Registration'}</span>
-              <CheckCircle2 className="w-4 h-4" />
-            </button>
-          </form>
-        )}
-
-        {/* PHONE OTP FORM */}
-        {mode === 'phone' && (
-          <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-3.5">
-            <div>
-              <label className="block text-xs font-semibold text-[#1E2233] mb-1">Mobile Number</label>
-              <div className="relative">
-                <Smartphone className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  required
-                  disabled={otpSent}
-                  placeholder="98765 43210"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-[#E3E5EC] rounded-xl focus:border-[#3B4FE0] focus:ring-1 focus:ring-[#3B4FE0] outline-none disabled:bg-[#F5F6FA]"
-                />
-              </div>
-            </div>
-
-            {otpSent && (
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-[#1E2233]">6-digit Code</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOtpSent(false);
-                      setOtp('');
-                      setSuccessMessage(null);
-                    }}
-                    className="text-[11px] text-[#3B4FE0] hover:underline cursor-pointer"
-                  >
-                    Change number / resend
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  required
-                  autoFocus
-                  placeholder="123456"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="w-full px-3 py-2 text-sm tracking-[0.4em] font-mono border border-[#E3E5EC] rounded-xl focus:border-[#3B4FE0] focus:ring-1 focus:ring-[#3B4FE0] outline-none"
-                />
-              </div>
-            )}
-
-            <div id="recaptcha-container" />
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('signin');
-                  setOtpSent(false);
-                  setError(null);
-                  setSuccessMessage(null);
-                }}
-                className="px-4 py-2 text-xs font-bold text-[#6B7280] hover:bg-[#F5F6FA] rounded-xl cursor-pointer"
-              >
-                Back
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 py-2 text-xs font-bold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-              >
-                {submitting ? 'Please wait...' : otpSent ? 'Verify & Sign In' : 'Send Code'}
-              </button>
-            </div>
-
-            {!isFirebaseConfigured && (
-              <p className="text-[11px] text-indigo-700">Demo mode: no SMS is sent — enter any 6 digits.</p>
-            )}
-          </form>
-        )}
-
-        {/* 3. FORGOT PASSWORD FORM */}
-        {mode === 'forgot' && (
-          <form onSubmit={handleForgotPassword} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-[#1E2233] mb-1">
-                Registered Email
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  required
-                  placeholder="student@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-[#E3E5EC] rounded-xl focus:border-[#3B4FE0] focus:ring-1 focus:ring-[#3B4FE0] outline-none"
-                  autoFocus
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('signin');
-                  setError(null);
-                  setSuccessMessage(null);
-                }}
-                className="px-4 py-2 text-xs font-bold text-[#6B7280] hover:bg-[#F5F6FA] rounded-xl cursor-pointer"
-              >
-                Back to Sign In
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 py-2 text-xs font-bold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>{submitting ? 'Sending...' : 'Send Password Reset'}</span>
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="px-6 py-3 bg-[#F5F6FA] border-t border-[#E3E5EC] text-center">
-        <p className="text-[11px] text-[#6B7280]">
-          Compliant with India DPDP Act 2023. No commercial tracking or ad profiles.
-          {!isFirebaseConfigured && (
-            <span className="block text-[10px] text-indigo-700 mt-0.5 font-medium">
-              Demo mode active: Login works instantly with or without live Firebase credentials.
-            </span>
-          )}
-        </p>
-      </div>
+      <p className="text-[11px] font-semibold leading-relaxed text-[#9AA1B4] text-center">
+        Before we use any of your data you'll see our{' '}
+        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[color:var(--brand)]">
+          privacy notice
+        </a>{' '}
+        and choose whether to consent. Under 18? A parent or guardian must approve.
+      </p>
     </div>
   );
 
-  if (isModal) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1E2233]/60 backdrop-blur-xs animate-in fade-in duration-200">
+  if (!isModal) return <div className="flex justify-center p-4">{content}</div>;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1E2233]/50 backdrop-blur-xs" role="dialog" aria-modal="true" aria-label="Sign in" onClick={close}>
+      <div className="w-full max-w-[440px]" onClick={(e) => e.stopPropagation()}>
         {content}
       </div>
-    );
-  }
-
-  return <div className="flex justify-center p-4">{content}</div>;
+    </div>
+  );
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, LogIn, LayoutDashboard, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { Logo as BrandLogo } from './Logo';
 
 type NavTab = 'home' | 'browse' | 'privacy' | 'profile';
 
@@ -13,20 +14,8 @@ interface NavbarProps {
 }
 
 const Logo: React.FC<{ onClick: () => void }> = ({ onClick }) => (
-  <button
-    onClick={onClick}
-    className="flex items-center gap-2.5 text-left cursor-pointer shrink-0"
-    aria-label="NCERT Prep home"
-  >
-    <span className="w-9 h-9 rounded-xl bg-[#3B4FE0] flex items-center justify-center shadow-[0_6px_16px_-6px_rgba(59,79,224,0.7)]">
-      <svg className="w-4 h-4 fill-white ml-0.5" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M8 5v14l11-7z" />
-      </svg>
-    </span>
-    <span className="text-lg font-semibold tracking-tight">
-      <span className="text-[#1E2233]">NCERT</span>
-      <span className="text-[#12A594]"> Prep</span>
-    </span>
+  <button onClick={onClick} className="text-left cursor-pointer shrink-0" aria-label="NCERT Prep home">
+    <BrandLogo tagline />
   </button>
 );
 
@@ -37,7 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   showSearch = true,
 }) => {
   const { user, isAdmin, setAuthModalOpen } = useAuth();
-  const isUserAdmin = isAdmin || user?.role === 'admin' || user?.email === 'admin@ncertprep.edu';
+  const isUserAdmin = isAdmin;
 
   const goToSection = (id: string) => {
     if (currentTab !== 'home') onNavigate('home');
@@ -45,13 +34,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const linkClass = (active: boolean) =>
-    `px-3 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
-      active ? 'text-[#3B4FE0] bg-[#EEEDFE]' : 'text-[#1E2233] hover:bg-[#F5F6FA]'
+    `px-3 py-2 rounded-[14px] text-sm font-semibold transition-colors cursor-pointer ${
+      active ? 'text-[color:var(--brand)] bg-[color:var(--brand-soft)]' : 'text-[#4B5168] hover:bg-[color:var(--page)]'
     }`;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-[#E3E5EC]/70">
-      <div className="w-full px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b-[3px] border-[color:var(--card-line)]">
+      <div className="w-full max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 h-[74px] flex items-center justify-between gap-4">
         <Logo onClick={() => onNavigate('home')} />
 
         <nav aria-label="Main" className="hidden md:flex items-center gap-1">
@@ -64,41 +53,44 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button onClick={() => goToSection('how-it-works')} className={linkClass(false)}>
             How it works
           </button>
+          <button onClick={() => goToSection('grows')} className={linkClass(false)}>
+            For every age
+          </button>
           <button onClick={() => onNavigate('browse')} className={linkClass(currentTab === 'browse')}>
-            Syllabus
+            Try demo
           </button>
         </nav>
 
         <div className="flex items-center gap-2">
           {showSearch && (
-            <button onClick={onOpenSearch} aria-label="Search lessons" className="p-2 rounded-xl text-[#1E2233] hover:bg-[#F5F6FA] cursor-pointer">
-              <Search className="w-5 h-5 text-[#3B4FE0]" />
+            <button onClick={onOpenSearch} aria-label="Search lessons" className="p-2 rounded-[14px] text-[#1E2233] hover:bg-[color:var(--page)] cursor-pointer">
+              <Search className="w-5 h-5 text-[color:var(--brand)]" />
             </button>
           )}
 
           {user ? (
             <button
               onClick={() => onNavigate('profile')}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-xl shadow-[0_6px_16px_-8px_rgba(59,79,224,0.8)] transition-colors cursor-pointer"
+              className="btn-3d [--edge:var(--brand-edge)] inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-extrabold text-white bg-[color:var(--brand)] hover:bg-[color:var(--brand-hover)] rounded-[14px] cursor-pointer"
             >
-              {isUserAdmin ? <Shield className="w-4 h-4 text-purple-200" /> : <LayoutDashboard className="w-4 h-4" />}
+              {isUserAdmin ? <Shield className="w-4 h-4 text-[#A9E6D3]" /> : <LayoutDashboard className="w-4 h-4" />}
               <span>{isUserAdmin ? 'Admin Console' : 'Go to App'}</span>
             </button>
           ) : (
             <>
               <button
                 onClick={() => setAuthModalOpen(true)}
-                className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold text-[#1E2233] hover:bg-[#F5F6FA] rounded-xl cursor-pointer"
+                className="hidden sm:inline-flex px-[18px] py-2.5 text-[13px] font-extrabold text-[color:var(--brand)] bg-[color:var(--brand-soft)] border-2 border-[color:var(--brand-line)] rounded-[14px] cursor-pointer"
               >
                 Sign in
               </button>
               <button
                 onClick={() => setAuthModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-xl shadow-[0_6px_16px_-8px_rgba(59,79,224,0.8)] transition-colors cursor-pointer"
+                className="btn-3d [--edge:#E0A81F] inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] font-extrabold text-[#1E2233] bg-[#FFC53D] hover:bg-[#FFCD55] rounded-[14px] cursor-pointer"
               >
                 <LogIn className="w-4 h-4 sm:hidden" />
                 <span className="sm:hidden">Sign in</span>
-                <span className="hidden sm:inline">Get started free</span>
+                <span className="hidden sm:inline">Start free</span>
               </button>
             </>
           )}

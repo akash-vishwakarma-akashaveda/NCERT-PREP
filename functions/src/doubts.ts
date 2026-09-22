@@ -1,6 +1,9 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { classSortOf } from './catalog';
+import { bumpStats } from './stats';
+import { requireConsent } from './consent';
+import { getPlatformConfig } from './platform';
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -8,7 +11,6 @@ if (admin.apps.length === 0) {
 
 const db = admin.firestore();
 
-const MAX_PER_DAY = 10;
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const MIN_LENGTH = 10;
 const MAX_LENGTH = 2000;
@@ -26,6 +28,11 @@ export const askDoubt = functions
     }
 
     const uid = context.auth.uid;
+    const { features, limits } = await getPlatformConfig();
+    if (!features.doubts) {
+      throw new functions.https.HttpsError('unavailable', 'Doubts are switched off right now. Please try again later.');
+    }
+    const MAX_PER_DAY = limits.doubtsPerDay;
     const youtubeId = typeof data?.youtubeId === 'string' ? data.youtubeId.trim() : '';
     const question = typeof data?.question === 'string' ? data.question.trim() : '';
 
@@ -39,10 +46,7 @@ export const askDoubt = functions
       );
     }
 
-    const [videoSnap, userSnap] = await Promise.all([
-      db.collection('videos').doc(youtubeId).get(),
-      db.collection('users').doc(uid).get(),
-    ]);
+    const [videoSnap, userSnap] = await Promise.all([db.collection('videos').doc(youtubeId).get(), requireConsent(uid)]);
     if (!videoSnap.exists || videoSnap.get('isActive') === false) {
       throw new functions.https.HttpsError('not-found', 'This lesson is no longer available.');
     }
@@ -85,6 +89,7 @@ export const askDoubt = functions
         created_at: timestamp,
         updated_at: timestamp,
       });
+      await bumpStats({ doubtsAsked: 1 }, undefined, tx);
     });
 
     return { success: true, doubtId: doubtRef.id };

@@ -13,7 +13,7 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
   percent,
   size = 96,
   stroke = 10,
-  color = '#3B4FE0',
+  color = 'var(--brand)',
   trackColor = 'rgba(30,34,51,0.08)',
   label,
 }) => {
@@ -29,16 +29,15 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={color}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={circumference * (1 - clamped / 100)}
-          style={{ transition: 'stroke-dashoffset 600ms ease' }}
+          style={{ stroke: color, transition: 'stroke-dashoffset 600ms ease' }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center text-center">
-        {label ?? <span className="text-lg font-semibold text-[#1E2233]">{Math.round(clamped)}%</span>}
+        {label ?? <span className="text-lg font-bold text-[#1E2233]">{Math.round(clamped)}%</span>}
       </div>
     </div>
   );

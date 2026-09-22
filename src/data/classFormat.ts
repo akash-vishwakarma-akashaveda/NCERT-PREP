@@ -75,10 +75,17 @@ export function compareChapterIds(a: string, b: string): number {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 }
 
+// "Physics Part-I" < "Physics Part II": punctuation is ignored so part numbers sort naturally.
+export function compareBooks(a = '', b = ''): number {
+  const clean = (t: string) => t.replace(/[^A-Za-z0-9]+/g, ' ').trim();
+  return clean(a).localeCompare(clean(b), undefined, { numeric: true, sensitivity: 'base' });
+}
+
 export function compareVideosInSyllabusOrder(a: Video, b: Video): number {
   return (
     a.class_sort.localeCompare(b.class_sort) ||
     a.subject.localeCompare(b.subject) ||
+    compareBooks(a.textbook, b.textbook) ||
     compareChapterIds(a.chapter_id, b.chapter_id)
   );
 }

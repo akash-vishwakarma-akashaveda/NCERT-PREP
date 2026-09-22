@@ -1,19 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ClassGroup } from '../../types';
-import {
-  Sparkles,
-  BookOpen,
-  GraduationCap,
-  Clock,
-  Bell,
-  CheckCircle2,
-  ArrowRight,
-  ArrowLeft,
-  X,
-} from 'lucide-react';
+import { ArrowRight, ArrowLeft, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getClassCardStyle } from '../../data/stageThemes';
-import { StageIcon } from '../common/StageIcon';
+import { ClassTile } from '../home/ClassGrid';
 import { REMINDER_HOURS, formatHour, reminderHour, reminderSummary } from '../profile/ReminderSettingsCard';
 
 interface OnboardingWizardProps {
@@ -107,385 +96,135 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1E2233]/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-[#E3E5EC] overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Top Header & Progress Bar */}
-        <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-[#E3E5EC] bg-white">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#3B4FE0] text-white flex items-center justify-center shadow-xs">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-[#1E2233]">
-                  Personalize Your NCERT Revision
-                </h2>
-                <p className="text-xs text-[#6B7280]">
-                  Step {step} of 4 — Setup your curriculum & study target
-                </p>
-              </div>
-            </div>
+  const STEPS = [
+    ['Your class', "Pick the class you're studying in. Your dashboard, syllabus and search show only this class."],
+    ['Focus subjects', 'Choose the subjects you want on top of your dashboard. All subjects stay available. Optional.'],
+    ['Daily target & reminders', 'How many minutes a day, and should we email you a nudge?'],
+    ['All set!', 'Check your choices and start learning.'],
+  ];
+  const [stepTitle, stepBody] = STEPS[step - 1];
+  const chip = (on: boolean) =>
+    `cursor-pointer border-[3px] font-extrabold ${on ? 'bg-[color:var(--brand)] border-[color:var(--brand-edge)] text-white' : 'bg-white border-[#E3E5EC] text-[#4B5168] hover:border-[color:var(--brand-line)]'}`;
+  const summary: [string, string][] = [
+    ['Class', `Class ${parseInt(selectedGrade, 10)}`],
+    ['Focus subjects', selectedSubjects.length ? selectedSubjects.join(', ') : 'All subjects'],
+    ['Daily target', `${dailyGoal} min`],
+    ['Reminders', enableReminders ? `${reminderSummary(true, reminderFreq, reminderHourValue)} IST` : 'Off'],
+  ];
 
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1E2233]/50 backdrop-blur-xs" role="dialog" aria-modal="true" aria-label="Set up your account">
+      <div className="relative w-full max-w-[620px] max-h-[92vh] flex flex-col bg-white rounded-[32px] border-[3px] border-[color:var(--card-line)] shadow-[0_8px_0_#E3E5EC] animate-pop-soft">
+        <div className="px-6 sm:px-8 pt-6 sm:pt-7 space-y-4">
+          <div className="flex items-center gap-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={`flex-1 h-[9px] rounded-full transition-colors duration-300 ${i <= step ? 'bg-[#12A594]' : 'bg-[color:var(--card-line)]'}`} />
+            ))}
             {hasClass && (
-              <button
-                onClick={handleSkip}
-                className="p-1.5 text-[#6B7280] hover:text-[#1E2233] hover:bg-[#F5F6FA] rounded-xl transition-colors cursor-pointer"
-                title="Skip setup"
-              >
-                <X className="w-5 h-5" />
+              <button onClick={handleSkip} aria-label="Close setup" className="ml-2 w-9 h-9 shrink-0 flex items-center justify-center rounded-xl bg-[color:var(--page)] border-2 border-[#E3E5EC] text-[#6B7280] hover:text-[#1E2233] cursor-pointer">
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
-
-          {/* Stepper Progress Indicator */}
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { num: 1, label: 'Your Class' },
-              { num: 2, label: 'Subjects' },
-              { num: 3, label: 'Daily Target' },
-              { num: 4, label: 'Ready' },
-            ].map((s) => (
-              <div key={s.num} className="space-y-1">
-                <div
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    step >= s.num ? 'bg-[#3B4FE0]' : 'bg-[#E3E5EC]'
-                  }`}
-                />
-                <span className="text-[10px] font-semibold text-[#6B7280] block text-center">
-                  {s.label}
-                </span>
-              </div>
-            ))}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-extrabold tracking-[0.1em] text-[color:var(--brand)]">STEP {step} OF 4</span>
+            <h2 className="text-[27px] leading-tight text-[#1E2233]">{stepTitle}</h2>
+            <p className="text-[13.5px] font-semibold leading-relaxed text-[#6B7280]">{stepBody}</p>
           </div>
         </div>
 
-        {/* Wizard Body Scrollable */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
-          {/* STEP 1: SELECT CLASS / GRADE */}
+        <div className="px-6 sm:px-8 py-5 overflow-y-auto flex-1">
           {step === 1 && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="text-center space-y-1">
-                <h3 className="text-lg font-extrabold text-[#1E2233]">
-                  Which class are you studying in right now?
-                </h3>
-                <p className="text-xs text-[#6B7280]">
-                  Your dashboard, syllabus and search will show only this class. You can change it later in Profile.
-                </p>
-                {selectedGrade && (
-                  <p className="text-[11px] font-semibold text-[#3B4FE0]">
-                    Class {parseInt(selectedGrade, 10)}:{' '}
-                    {lessonCount(selectedGrade) > 0
-                      ? `${lessonCount(selectedGrade)} lessons available`
-                      : 'lessons coming soon'}
-                  </p>
-                )}
+            <div className="space-y-3">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(78px,1fr))] gap-[11px] pb-1">
+                {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map((c) => (
+                  <ClassTile key={c} classSort={c} selected={selectedGrade === c} onClick={() => pickGrade(c)} />
+                ))}
               </div>
-
-              {/* Stage Groups */}
-              <div className="space-y-4 pt-2">
-                {/* Primary */}
-                <div className="space-y-2">
-                  <span className="text-xs font-bold text-amber-900 bg-amber-100/80 px-2.5 py-0.5 rounded-md inline-flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-amber-700" />
-                    <span>Primary Foundation (Classes 1–5)</span>
-                  </span>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
-                    {['01', '02', '03', '04', '05'].map((c) => {
-                      const style = getClassCardStyle(c);
-                      const isSelected = selectedGrade === c;
-                      return (
-                        <button
-                          key={c}
-                          onClick={() => pickGrade(c)}
-                          className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
-                            isSelected
-                              ? 'ring-2 shadow-sm scale-105'
-                              : 'bg-white hover:bg-[#F5F6FA] border-[#E3E5EC]'
-                          }`}
-                          style={{
-                            borderColor: isSelected ? style.accent : undefined,
-                            backgroundColor: isSelected ? style.badgeBg : undefined,
-                          }}
-                        >
-                          <StageIcon
-                            name={style.iconName}
-                            className="w-5 h-5"
-                            style={{ color: style.accent }}
-                          />
-                          <span className="text-xs font-bold" style={{ color: style.textColor }}>
-                            Class {parseInt(c, 10)}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Middle & Boards */}
-                <div className="space-y-2">
-                  <span className="text-xs font-bold text-[#3B4FE0] bg-blue-100/80 px-2.5 py-0.5 rounded-md inline-flex items-center gap-1.5">
-                    <BookOpen className="w-3 h-3 text-[#3B4FE0]" />
-                    <span>Middle & Boards (Classes 6–10)</span>
-                  </span>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
-                    {['06', '07', '08', '09', '10'].map((c) => {
-                      const style = getClassCardStyle(c);
-                      const isSelected = selectedGrade === c;
-                      return (
-                        <button
-                          key={c}
-                          onClick={() => pickGrade(c)}
-                          className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
-                            isSelected
-                              ? 'ring-2 shadow-sm scale-105'
-                              : 'bg-white hover:bg-[#F5F6FA] border-[#E3E5EC]'
-                          }`}
-                          style={{
-                            borderColor: isSelected ? style.accent : undefined,
-                            backgroundColor: isSelected ? style.badgeBg : undefined,
-                          }}
-                        >
-                          <StageIcon
-                            name={style.iconName}
-                            className="w-5 h-5"
-                            style={{ color: style.accent }}
-                          />
-                          <span className="text-xs font-bold" style={{ color: style.textColor }}>
-                            Class {parseInt(c, 10)}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Senior Secondary */}
-                <div className="space-y-2">
-                  <span className="text-xs font-bold text-slate-900 bg-slate-200 px-2.5 py-0.5 rounded-md inline-flex items-center gap-1.5">
-                    <GraduationCap className="w-3 h-3 text-slate-800" />
-                    <span>Senior Secondary & Entrance (Classes 11–12)</span>
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {['11', '12'].map((c) => {
-                      const style = getClassCardStyle(c);
-                      const isSelected = selectedGrade === c;
-                      return (
-                        <button
-                          key={c}
-                          onClick={() => pickGrade(c)}
-                          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                            isSelected
-                              ? 'ring-2 shadow-sm scale-102'
-                              : 'bg-white hover:bg-[#F5F6FA] border-[#E3E5EC]'
-                          }`}
-                          style={{
-                            borderColor: isSelected ? style.accent : undefined,
-                            backgroundColor: isSelected ? style.badgeBg : undefined,
-                          }}
-                        >
-                          <div className="flex items-center gap-3">
-                            <StageIcon
-                              name={style.iconName}
-                              className="w-6 h-6"
-                              style={{ color: style.accent }}
-                            />
-                            <div>
-                              <p className="text-xs sm:text-sm font-bold" style={{ color: style.textColor }}>
-                                {style.class_display}
-                              </p>
-                              <p className="text-[11px] text-[#6B7280]">
-                                Boards, JEE & NEET Alignment
-                              </p>
-                            </div>
-                          </div>
-                          {isSelected && <CheckCircle2 className="w-5 h-5 text-[#3B4FE0]" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 2: CHOOSE FOCUS SUBJECTS */}
-          {step === 2 && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="text-center space-y-1">
-                <h3 className="text-lg font-extrabold text-[#1E2233]">
-                  Select your primary subjects for Class {parseInt(selectedGrade, 10)}
-                </h3>
-                <p className="text-xs text-[#6B7280]">
-                  All subjects of your class stay available; focus subjects are shown first on your dashboard. Optional.
-                </p>
-              </div>
-
-              {availableSubjects.length === 0 && (
-                <p className="text-center text-xs text-[#6B7280] bg-[#F5F6FA] border border-dashed border-[#E3E5EC] rounded-2xl p-6">
-                  Lessons for this class haven&apos;t been published yet. You can set focus subjects later in Profile.
+              {selectedGrade && (
+                <p className="text-xs font-bold text-[#12A594]">
+                  Class {parseInt(selectedGrade, 10)}:{' '}
+                  {lessonCount(selectedGrade) > 0 ? `${lessonCount(selectedGrade)} lessons ready.` : 'lessons coming soon.'} You can change
+                  this later in Profile; progress is kept.
                 </p>
               )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                {availableSubjects.map((subject) => {
-                  const isChecked = selectedSubjects.includes(subject);
-                  return (
-                    <button
-                      key={subject}
-                      type="button"
-                      onClick={() => toggleSubject(subject)}
-                      className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                        isChecked
-                          ? 'bg-[#EEEDFE] border-[#3B4FE0] text-[#26215C] shadow-2xs'
-                          : 'bg-white border-[#E3E5EC] hover:bg-[#F5F6FA] text-[#1E2233]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                            isChecked ? 'bg-[#3B4FE0] text-white' : 'bg-[#F5F6FA] text-[#6B7280]'
-                          }`}
-                        >
-                          <BookOpen className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="text-xs sm:text-sm font-bold">{subject}</p>
-                          <p className="text-[11px] text-[#6B7280]">NCERT Prescribed Curriculum</p>
-                        </div>
-                      </div>
-
-                      <div
-                        className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                          isChecked
-                            ? 'bg-[#3B4FE0] border-[#3B4FE0] text-white'
-                            : 'border-[#CBD5E1] bg-white'
-                        }`}
-                      >
-                        {isChecked && <CheckCircle2 className="w-3.5 h-3.5" />}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
             </div>
           )}
 
-          {/* STEP 3: DAILY STUDY TARGET & REMINDERS */}
-          {step === 3 && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              <div className="text-center space-y-1">
-                <h3 className="text-lg font-extrabold text-[#1E2233]">
-                  Set Your Daily Routine & Revision Reminders
-                </h3>
-                <p className="text-xs text-[#6B7280]">
-                  Consistency is key. Choose your daily Pomodoro target and notification schedule.
-                </p>
-              </div>
-
-              {/* Target Buttons */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-[#1E2233] flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-[#12A594]" />
-                  <span>Daily Focus Goal</span>
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {[
-                    { mins: 25, label: '1 Pomodoro (25m)', sub: 'Light Brush-up' },
-                    { mins: 50, label: '2 Pomodoros (50m)', sub: 'Recommended' },
-                    { mins: 75, label: '3 Pomodoros (75m)', sub: 'Deep Study' },
-                    { mins: 100, label: '4 Pomodoros (100m)', sub: 'Intensive Sprint' },
-                  ].map((goal) => (
-                    <button
-                      key={goal.mins}
-                      type="button"
-                      onClick={() => setDailyGoal(goal.mins)}
-                      className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
-                        dailyGoal === goal.mins
-                          ? 'border-[#3B4FE0] bg-[#EEEDFE] text-[#3B4FE0] shadow-xs'
-                          : 'border-[#E3E5EC] bg-white text-[#6B7280] hover:bg-[#F5F6FA]'
-                      }`}
-                    >
-                      <p className="text-sm font-extrabold">{goal.mins}m</p>
-                      <p className="text-[10px] font-semibold mt-0.5">{goal.sub}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Reminders Toggle & Schedule */}
-              <div className="p-4 rounded-2xl border border-[#E3E5EC] bg-[#F5F6FA] space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-[#3B4FE0]/10 text-[#3B4FE0] flex items-center justify-center">
-                      <Bell className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-[#1E2233]">
-                        Email revision reminders
-                      </p>
-                      <p className="text-[11px] text-[#6B7280]">
-                        A short email with your next lesson. Change or turn off anytime from Reminders in the menu.
-                      </p>
-                    </div>
-                  </div>
-
+          {step === 2 &&
+            (availableSubjects.length === 0 ? (
+              <p className="text-center text-sm font-semibold text-[#6B7280] bg-[#F7F8FC] border-2 border-dashed border-[#E3E5EC] rounded-[22px] p-6">
+                Lessons for this class haven&apos;t been published yet. You can set focus subjects later in Profile.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-[11px]">
+                {availableSubjects.map((subject) => (
                   <button
+                    key={subject}
                     type="button"
-                    onClick={() => setEnableReminders(!enableReminders)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
-                      enableReminders ? 'bg-[#12A594]' : 'bg-[#CBD5E1]'
+                    aria-pressed={selectedSubjects.includes(subject)}
+                    onClick={() => toggleSubject(subject)}
+                    className={`px-[18px] py-[11px] rounded-full text-[13px] ${chip(selectedSubjects.includes(subject))}`}
+                  >
+                    {subject}
+                  </button>
+                ))}
+              </div>
+            ))}
+
+          {step === 3 && (
+            <div className="space-y-3.5">
+              <div className="flex flex-wrap gap-2.5">
+                {[25, 50, 75, 100].map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    aria-pressed={dailyGoal === mins}
+                    onClick={() => setDailyGoal(mins)}
+                    className={`flex-1 min-w-[88px] p-3.5 rounded-[18px] border-[3px] text-[13.5px] font-extrabold text-[#1E2233] cursor-pointer ${
+                      dailyGoal === mins ? 'bg-[#FFC53D] border-[#E0A81F]' : 'bg-white border-[#E3E5EC] hover:border-[#FFD97A]'
                     }`}
                   >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
-                        enableReminders ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
+                    {mins} min
                   </button>
-                </div>
+                ))}
+              </div>
 
+              <div className="rounded-[18px] bg-[#F7F8FC] border-2 border-[#E3E5EC] p-3.5 space-y-3">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={enableReminders}
+                  onClick={() => setEnableReminders(!enableReminders)}
+                  className="w-full flex items-center gap-3 text-left cursor-pointer"
+                >
+                  <span className={`w-12 h-[27px] shrink-0 rounded-full p-[3px] flex transition-colors ${enableReminders ? 'bg-[#12A594] justify-end' : 'bg-[#D7DCEF] justify-start'}`}>
+                    <span className="w-[21px] h-[21px] rounded-full bg-white" />
+                  </span>
+                  <span className="text-[13px] font-extrabold text-[#1E2233]">
+                    Email reminders {enableReminders ? 'on' : 'off'}
+                    <span className="block text-[11.5px] font-semibold text-[#6B7280]">A short email with your next lesson. Change it any time.</span>
+                  </span>
+                </button>
                 {enableReminders && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-[#E3E5EC]">
-                    <label
-                      className={`p-2.5 rounded-xl border text-xs cursor-pointer flex items-center gap-2 ${
-                        reminderFreq === 'daily'
-                          ? 'border-[#3B4FE0] bg-white text-[#3B4FE0] font-bold'
-                          : 'border-[#E3E5EC] bg-white text-[#6B7280]'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="remind"
-                        checked={reminderFreq === 'daily'}
-                        onChange={() => setReminderFreq('daily')}
-                        className="text-[#3B4FE0]"
-                      />
-                      <span>Every day</span>
-                    </label>
-
-                    <label
-                      className={`p-2.5 rounded-xl border text-xs cursor-pointer flex items-center gap-2 ${
-                        reminderFreq === 'weekly'
-                          ? 'border-[#3B4FE0] bg-white text-[#3B4FE0] font-bold'
-                          : 'border-[#E3E5EC] bg-white text-[#6B7280]'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="remind"
-                        checked={reminderFreq === 'weekly'}
-                        onChange={() => setReminderFreq('weekly')}
-                        className="text-[#3B4FE0]"
-                      />
-                      <span>Every Sunday</span>
-                    </label>
-                    <label className="sm:col-span-2 flex items-center gap-2 text-xs text-[#1E2233]">
-                      <span className="font-bold">Send at</span>
+                  <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t-2 border-[color:var(--card-line)]">
+                    {(['daily', 'weekly'] as const).map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        aria-pressed={reminderFreq === f}
+                        onClick={() => setReminderFreq(f)}
+                        className={`flex-1 min-w-[110px] py-2.5 rounded-[14px] text-[12.5px] ${chip(reminderFreq === f)}`}
+                      >
+                        {f === 'daily' ? 'Daily' : 'Weekly (Sun)'}
+                      </button>
+                    ))}
+                    <label className="w-full flex items-center gap-2 text-[12.5px] font-extrabold text-[#1E2233]">
+                      Send at
                       <select
                         value={reminderHour(reminderFreq, reminderHourValue)}
                         onChange={(e) => setReminderHourValue(Number(e.target.value))}
-                        className="px-2.5 py-1.5 rounded-lg border border-[#E3E5EC] bg-white text-xs focus:border-[#3B4FE0] outline-none"
+                        className="px-3 py-2 rounded-xl border-2 border-[#E3E5EC] bg-white text-[12.5px] font-bold focus:border-[color:var(--brand)] outline-none"
                       >
                         {REMINDER_HOURS.map((h) => (
                           <option key={h} value={h}>
@@ -501,101 +240,51 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             </div>
           )}
 
-          {/* STEP 4: READY / CONFIRMATION */}
           {step === 4 && (
-            <div className="space-y-6 text-center animate-in fade-in duration-200 py-2">
-              <div className="w-16 h-16 rounded-3xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-xs">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-
-              <div className="space-y-1.5">
-                <h3 className="text-xl font-extrabold text-[#1E2233]">
-                  You&apos;re All Set for NCERT Mastery!
-                </h3>
-                <p className="text-xs sm:text-sm text-[#6B7280] max-w-md mx-auto">
-                  Your distraction-free workspace is tailored and ready. Here is a summary of your revision setup:
-                </p>
-              </div>
-
-              <div className="bg-[#F5F6FA] border border-[#E3E5EC] rounded-2xl p-4 text-left max-w-md mx-auto space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#6B7280]">Your Class:</span>
-                  <span className="font-bold text-[#1E2233]">Class {parseInt(selectedGrade, 10)}</span>
+            <dl className="rounded-[22px] bg-[#FFF6E2] border-[3px] border-[#FFD97A] p-[18px] space-y-2">
+              {summary.map(([k, v]) => (
+                <div key={k} className="flex justify-between gap-4 items-baseline">
+                  <dt className="text-[12.5px] font-bold text-[#8A5A14]">{k}</dt>
+                  <dd className="text-[12.5px] font-extrabold text-[#1E2233] text-right">{v}</dd>
                 </div>
-
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#6B7280]">Focus Subjects:</span>
-                  <span className="font-bold text-[#1E2233]">
-                    {selectedSubjects.length === 0
-                      ? 'All subjects'
-                      : `${selectedSubjects.slice(0, 2).join(', ')}${
-                          selectedSubjects.length > 2 ? ` +${selectedSubjects.length - 2}` : ''
-                        }`}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#6B7280]">Daily Focus Goal:</span>
-                  <span className="font-bold text-[#12A594]">{dailyGoal} Minutes</span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#6B7280]">Reminders:</span>
-                  <span className="font-bold text-[#3B4FE0]">
-                    {enableReminders ? `${reminderSummary(true, reminderFreq, reminderHourValue)} IST` : 'Off'}
-                  </span>
-                </div>
-              </div>
-            </div>
+              ))}
+            </dl>
           )}
         </div>
 
-        {/* Wizard Footer Controls */}
-        <div className="px-4 sm:px-6 py-4 border-t border-[#E3E5EC] bg-[#F5F6FA] flex items-center justify-between gap-2">
+        <div className="px-6 sm:px-8 pb-6 sm:pb-7 flex items-center gap-2.5">
           {step > 1 ? (
             <button
               type="button"
               onClick={() => setStep((prev) => (prev - 1) as 1 | 2 | 3)}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-[#6B7280] hover:text-[#1E2233] hover:bg-white rounded-xl transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-5 py-3 rounded-2xl text-[13px] font-extrabold bg-[color:var(--page)] border-2 border-[#E3E5EC] text-[#6B7280] hover:text-[#1E2233] cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+          ) : hasClass ? (
+            <button type="button" onClick={handleSkip} className="px-4 py-3 text-[13px] font-extrabold text-[#6B7280] hover:text-[#1E2233] cursor-pointer">
+              Skip setup
             </button>
           ) : (
-            hasClass ? (
-              <button
-                type="button"
-                onClick={handleSkip}
-                className="px-4 py-2 text-xs font-bold text-[#6B7280] hover:text-[#1E2233] cursor-pointer"
-              >
-                Skip Setup
-              </button>
-            ) : (
-              <span className="text-[11px] text-[#6B7280]">Pick your class to continue</span>
-            )
+            <span className="text-xs font-bold text-[#6B7280]">Pick your class to continue</span>
           )}
 
-          {step < 4 ? (
-            <button
-              type="button"
-              disabled={step === 1 && !selectedGrade}
-              onClick={() => setStep((prev) => (prev + 1) as 2 | 3 | 4)}
-              className="flex items-center gap-1.5 px-6 py-2.5 text-xs font-bold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span>Continue</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleFinish}
-              disabled={submitting}
-              className="flex items-center gap-1.5 px-6 py-2.5 text-xs font-bold text-white bg-[#12A594] hover:bg-[#0E8576] rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-            >
-              <span>{submitting ? 'Saving...' : 'Start My Revision'}</span>
-              <CheckCircle2 className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            type="button"
+            disabled={(step === 1 && !selectedGrade) || submitting}
+            onClick={step < 4 ? () => setStep((prev) => (prev + 1) as 2 | 3 | 4) : handleFinish}
+            className="ml-auto btn-3d [--edge:#0B7A67] flex items-center gap-1.5 px-[26px] py-3 rounded-2xl text-sm font-extrabold text-white bg-[#12A594] hover:bg-[#10988A] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {step < 4 ? (
+              <>
+                Continue <ArrowRight className="w-4 h-4" />
+              </>
+            ) : submitting ? (
+              'Saving…'
+            ) : (
+              'Start learning'
+            )}
+          </button>
         </div>
       </div>
     </div>

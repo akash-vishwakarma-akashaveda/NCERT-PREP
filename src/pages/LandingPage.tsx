@@ -1,40 +1,92 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import {
-  ArrowRight,
-  BookOpen,
-  Play,
-  FileText,
-  MessageCircleQuestion,
-  Flame,
-  BarChart3,
-  Bell,
-  XCircle,
-  CheckCircle2,
-  Sparkles,
-  Timer,
-} from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowRight, Play, FileText, MessageCircleQuestion, Bell, Check, Star } from 'lucide-react';
 import { ClassGroup, Video } from '../types';
-import { JumpBackInCard, thumbnailUrl } from '../components/home/JumpBackInCard';
+import { JumpBackInCard } from '../components/home/JumpBackInCard';
 import { ClassGrid } from '../components/home/ClassGrid';
 import { ClassGridSkeleton } from '../components/common/SkeletonLoader';
 import { useProgress } from '../context/ProgressContext';
-import { getSubjectTileStyle } from '../data/colorTokens';
+import { SubjectGlyph, btnPrimary, btnSecondary, card } from '../student/ui';
+import { STAGES, StagePreview, StageShowcase } from '../components/home/StageShowcase';
+import { TAGLINE } from '../components/common/Logo';
 
 interface LandingPageProps {
   classes: ClassGroup[];
   allVideos: Video[];
+  catalogLoading: boolean;
   onExploreCurriculum: () => void;
   onSelectVideo: (video: Video) => void;
   onSelectClass: (classSort: string) => void;
   onLaunchDemoAuth: () => void;
 }
 
+/** Site column shared by the navbar, footer and every landing band. */
+const WRAP = 'max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10';
+
+const SectionTitle: React.FC<{ id: string; eyebrow: string; title: string; children?: React.ReactNode }> = ({ id, eyebrow, title, children }) => (
+  <div data-reveal className="max-w-2xl mx-auto text-center">
+    <p className="text-[11px] font-extrabold tracking-[0.12em] text-[#3B4FE0]">{eyebrow}</p>
+    <h2 id={id} className="mt-1 text-[26px] sm:text-[36px] leading-tight text-[#1E2233] text-balance">
+      {title}
+    </h2>
+    {children && <p className="mt-2 text-[14.5px] font-semibold text-[#4B5168]">{children}</p>}
+  </div>
+);
+
+const FEATURES = [
+  { Icon: Check, title: 'Progress you can see', body: 'Every chapter shows done, current or up ahead, so a student always knows the next step.', tint: '#E7F7F1', ink: '#12A594' },
+  { Icon: MessageCircleQuestion, title: 'Private doubts', body: 'Ask the teacher a question on any lesson and get a reply in the app, never in public comments.', tint: '#EEF0FE', ink: '#3B4FE0' },
+  { Icon: Star, title: 'Streaks and XP', body: '50 XP per finished lesson and an honest daily streak. No fake numbers to start with.', tint: '#FFF1D6', ink: '#C98A0E' },
+  { Icon: FileText, title: 'Notes & cheat sheets', body: 'Summaries, key formulas, exam tips and downloadable PDFs for each chapter.', tint: '#EDEAFE', ink: '#7A5BE0' },
+  { Icon: Play, title: 'Just the lesson', body: 'Privacy-enhanced playback with no recommendations, comments or autoplay rabbit holes.', tint: '#FFE9E2', ink: '#E0603F' },
+  { Icon: Bell, title: 'Gentle reminders', body: 'Optional daily or weekly emails at the IST time you choose, with one-click unsubscribe.', tint: '#FDE8F1', ink: '#D2538C' },
+];
+
+const STEPS = [
+  ['Pick your class', 'Tell us the class you study in. Your dashboard, syllabus and search follow it.', '#3B4FE0', '#2A3BB8'],
+  ['Follow the trail', 'Go chapter by chapter. Finished lessons are ticked off automatically.', '#12A594', '#0B7A67'],
+  ['Revise & ask', 'Open the cheat sheet before exams, use the focus timer, and ask doubts when stuck.', '#FFC53D', '#E0A81F'],
+];
+
 const scrollToGrid = () =>
   document.getElementById('visual-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+/** Shows `to`; the first time it scrolls into view it counts up from 0 (skipped with reduced motion). */
+const CountUp: React.FC<{ to: number }> = ({ to }) => {
+  // null = show the real value. Only a running animation replaces it, so crawlers and stalled tabs never see 0.
+  const [n, setN] = useState<number | null>(null);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !to || !('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let raf = 0;
+    let done = 0;
+    const io = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      io.disconnect();
+      done = window.setTimeout(() => setN(null), 1400);
+      const start = performance.now();
+      const tick = (now: number) => {
+        const p = Math.min(1, (now - start) / 1200);
+        setN(p < 1 ? Math.round(to * (1 - Math.pow(1 - p, 3))) : null);
+        if (p < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    });
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      cancelAnimationFrame(raf);
+      window.clearTimeout(done);
+      setN(null);
+    };
+  }, [to]);
+  return <span ref={ref}>{(n ?? to).toLocaleString('en-IN')}</span>;
+};
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   classes,
   allVideos,
+  catalogLoading,
   onExploreCurriculum,
   onSelectVideo,
   onSelectClass,
@@ -48,14 +100,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     return {
       lessons: active.length,
       subjects: new Set(active.map((v) => v.subject)).size,
+      subjectNames: Array.from(new Set(active.map((v) => v.subject))).sort(),
       sample: active.find((v) => v.class_sort === '10') || active[0],
     };
   }, [allVideos]);
 
-  const popular = classes
-    .filter((c) => c.videoCount > 0)
-    .sort((a, b) => b.videoCount - a.videoCount)
-    .slice(0, 4);
 
   // Reveal sections as they scroll into view; re-scan when the class grid finishes loading.
   const rootRef = useRef<HTMLDivElement>(null);
@@ -82,298 +131,203 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   const stagger = (i: number, step = 80) => ({ '--reveal-delay': `${i * step}ms` }) as React.CSSProperties;
 
+
   return (
-    <div ref={rootRef} className="space-y-16 sm:space-y-24 pb-24">
-      {/* Hero */}
-      <section className="relative pt-6 sm:pt-12">
-        <div className="relative grid lg:grid-cols-[1.1fr_1fr] gap-12 items-center">
-          <div className="space-y-7">
-            <span className="animate-fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-[#E3E5EC] text-xs font-semibold text-[#1E2233] shadow-2xs">
-              <span className="relative flex w-2 h-2">
-                <span className="absolute inset-0 rounded-full bg-[#12A594] opacity-60 animate-ping" />
-                <span className="relative w-2 h-2 rounded-full bg-[#12A594]" />
-              </span>
-              NCERT Classes 1–12 · 2026–27
+    <div ref={rootRef}>
+      {/* Hero band. Its background blends the three looks: confetti (1–5), graph paper (6–10), formulas (11–12). */}
+      <section className="landing-hero relative overflow-hidden">
+        <span aria-hidden="true" className="landing-mix-left" />
+        <span aria-hidden="true" className="landing-mix-right" />
+        <div className={`${WRAP} relative pt-10 sm:pt-16 pb-10 grid lg:grid-cols-[1.1fr_1fr] gap-12 items-center`}>
+          <div className="flex flex-col gap-4 sm:gap-5">
+            <span className="animate-fade-up self-start inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border-2 border-[#A9E6D3] text-[11px] font-extrabold tracking-[0.08em] text-[#0B7A67]">
+              <span className="w-2 h-2 rounded-full bg-[#12A594] animate-pulse" /> CLASS 1–12 · GROWS WITH YOU
             </span>
-
-            <h1 className="animate-fade-up [animation-delay:80ms] text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] text-[#1E2233] text-balance">
-              Revise every NCERT chapter.{' '}
-              <span className="text-gradient-brand animate-gradient-text">Without the YouTube noise.</span>
+            <h1 className="animate-fade-up [animation-delay:80ms] text-[40px] sm:text-[56px] leading-[1.05] text-[#1E2233] text-balance">
+              Every chapter,{' '}
+              <span className="relative inline-block text-[#3B4FE0]">
+                explained simply.
+                <svg aria-hidden="true" viewBox="0 0 300 16" preserveAspectRatio="none" className="absolute left-0 -bottom-2 w-full h-3.5">
+                  <path d="M4 11C60 3 120 3 176 8S264 13 296 5" fill="none" stroke="#FFC53D" strokeWidth="6" strokeLinecap="round" className="animate-draw" />
+                </svg>
+              </span>
             </h1>
-
-            <p className="animate-fade-up [animation-delay:160ms] text-base sm:text-lg text-[#6B7280] max-w-xl">
-              Structured video lessons by class, subject and chapter — with notes, cheat sheets, doubt support and
-              progress that remembers where you stopped.
+            <p className="animate-fade-up [animation-delay:160ms] text-[15.5px] font-semibold leading-relaxed text-[#4B5168] max-w-[520px]">
+              Short, clear video lessons for every NCERT chapter, in syllabus order. The app changes its look as your child grows:
+              playful for Class 1–5, a study notebook for 6–10 and a calm focus desk for 11–12. No ads, no rabbit holes.
             </p>
-
-            {popular.length > 0 && (
-              <div className="animate-fade-up [animation-delay:320ms] flex flex-wrap items-center gap-2 text-xs">
-                <span className="text-[#6B7280] font-medium">Popular:</span>
-                {popular.map((c) => (
-                  <button
-                    key={c.class_sort}
-                    onClick={() => onSelectClass(c.class_sort)}
-                    className="px-3 py-1.5 rounded-full bg-white border border-[#E3E5EC] hover:border-[#3B4FE0]/40 hover:-translate-y-0.5 transition-transform font-semibold text-[#1E2233] cursor-pointer"
-                  >
-                    {c.class_display}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="animate-fade-up [animation-delay:400ms] flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={onLaunchDemoAuth}
-                className="group flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-semibold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] shadow-[0_10px_24px_-12px_rgba(59,79,224,0.8)] transition-colors cursor-pointer"
-              >
-                Start learning free
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            <div className="animate-fade-up [animation-delay:240ms] flex flex-wrap gap-3">
+              <button onClick={onLaunchDemoAuth} className={`${btnPrimary} px-6 py-3.5 text-[14.5px] rounded-[18px] group`}>
+                Start learning free <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
-              <button
-                onClick={onExploreCurriculum}
-                className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-semibold text-[#1E2233] bg-white border border-[#E3E5EC] hover:bg-[#F5F6FA] transition-colors cursor-pointer"
-              >
-                <BookOpen className="w-4 h-4 text-[#12A594]" />
-                Browse the syllabus
+              <button onClick={onExploreCurriculum} className={`${btnSecondary} px-6 py-3.5 text-[14.5px] rounded-[18px]`}>
+                Try the demo
               </button>
             </div>
-
-            <dl className="animate-fade-up [animation-delay:480ms] flex flex-wrap gap-x-8 gap-y-3 pt-2">
-              {[
-                [classes.length, 'classes'],
-                [stats.subjects, 'subjects'],
-                [stats.lessons, 'lessons'],
-              ].map(([value, label]) => (
-                <div key={label as string}>
-                  <dt className="sr-only">{label}</dt>
-                  <dd className="text-2xl font-semibold text-[#1E2233]">
-                    {value} <span className="text-sm font-medium text-[#6B7280]">{label}</span>
+            {stats.lessons > 0 && (
+            <dl className="animate-fade-up [animation-delay:320ms] grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 max-w-[560px]">
+              {(
+                [
+                  [<CountUp key="l" to={stats.lessons} />, 'LESSONS', '#12A594'],
+                  [<CountUp key="c" to={classes.length} />, 'CLASSES', '#3B4FE0'],
+                  [<CountUp key="s" to={stats.subjects} />, 'SUBJECTS', '#7A5BE0'],
+                  ['0 ads', 'EVER', '#C98A0E'],
+                ] as [React.ReactNode, string, string][]
+              ).map(([value, label, color]) => (
+                <div key={label} className="flex flex-col px-3.5 py-2.5 rounded-[18px] bg-white border-2 border-[#EDEFF6] shadow-[0_4px_0_#EDEFF6]">
+                  <dd className="font-display text-[24px] leading-tight tabular-nums" style={{ color }}>
+                    {value}
                   </dd>
+                  <dt className="text-[10.5px] font-extrabold tracking-[0.06em] text-[#6B7280]">{label}</dt>
                 </div>
               ))}
-              <div>
-                <dd className="text-2xl font-semibold text-[#12A594]">
-                  0 <span className="text-sm font-medium text-[#6B7280]">ads or recommendations</span>
-                </dd>
-              </div>
             </dl>
+            )}
           </div>
 
-          {/* Product preview collage (decorative) */}
-          <div aria-hidden="true" className="hidden lg:grid grid-cols-6 grid-rows-[auto_auto_auto] gap-4 animate-fade-up [animation-delay:200ms]">
-            <div className="bento col-span-6 p-4 flex gap-4 items-center animate-float">
-              <div className="relative w-40 aspect-video rounded-xl overflow-hidden bg-[#1E2233] shrink-0">
-                {stats.sample && <img src={thumbnailUrl(stats.sample.youtube_id)} alt="" className="w-full h-full object-cover" />}
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <span className="w-9 h-9 rounded-full bg-white/95 flex items-center justify-center animate-pulse-ring">
-                    <Play className="w-4 h-4 text-[#3B4FE0] fill-[#3B4FE0] ml-0.5" />
+          <div className="animate-fade-up [animation-delay:200ms]">
+            <StageShowcase videos={allVideos} />
+          </div>
+        </div>
+
+        {/* Subjects marquee (real subjects from the catalogue) */}
+        {stats.subjectNames.length > 0 && (
+          <div
+            aria-label="Subjects covered"
+            role="region"
+            className="marquee relative overflow-hidden pb-12 [mask-image:linear-gradient(90deg,transparent,black_8%,black_92%,transparent)]"
+          >
+            <ul className="flex w-max gap-3 animate-marquee">
+              {[...stats.subjectNames, ...stats.subjectNames].map((name, i) => (
+                <li
+                  key={`${name}-${i}`}
+                  aria-hidden={i >= stats.subjectNames.length || undefined}
+                  className="flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl bg-white border-2 border-[#EDEFF6] whitespace-nowrap"
+                >
+                  <SubjectGlyph subject={name} className="w-8 h-8 rounded-[11px]" />
+                  <span className="text-[13px] font-extrabold text-[#1E2233]">{name}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <svg aria-hidden="true" viewBox="0 0 1440 60" preserveAspectRatio="none" className="relative block w-full h-10 sm:h-14 text-white">
+          <path d="M0 38C240 8 480 0 720 22S1200 62 1440 30V60H0Z" fill="currentColor" />
+        </svg>
+      </section>
+
+      {/* One app, three looks: each panel uses that age group's real theme */}
+      <section id="grows" aria-labelledby="grows-title" className="bg-white scroll-mt-20">
+        <div className={`${WRAP} py-14 sm:py-20 space-y-10`}>
+          <SectionTitle id="grows-title" eyebrow="GROWS WITH YOU" title="One app, three looks. It grows up with every class.">
+            Students see the look that fits their age automatically, from the class they pick.
+          </SectionTitle>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {STAGES.map((stage, i) => (
+              <article key={stage.id} data-reveal style={stagger(i, 140)} className="flex flex-col gap-4">
+                <StagePreview stage={stage} videos={allVideos} compact />
+                <div className="flex items-start gap-3 px-1">
+                  <span className="w-10 h-10 shrink-0 rounded-[13px] bg-[#EEF0FE] text-[#3B4FE0] flex items-center justify-center">
+                    <stage.Icon className="w-5 h-5" />
                   </span>
-                </span>
-              </div>
-              <div className="min-w-0 space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#12A594]">Jump back in</p>
-                <p className="text-sm font-semibold text-[#1E2233] line-clamp-2">
-                  {stats.sample?.chapter_name || 'Chemical Reactions and Equations'}
-                </p>
-                <div className="h-1.5 w-40 bg-[#E3E5EC] rounded-full overflow-hidden">
-                  <div className="h-full w-2/3 bg-[#12A594] rounded-full animate-grow-x" />
+                  <div>
+                    <p className="text-[11px] font-extrabold tracking-[0.08em] text-[#6B7280]">{stage.label.toUpperCase()}</p>
+                    <h3 className="text-lg text-[#1E2233]">{stage.name}</h3>
+                    <p className="mt-0.5 text-[13px] font-semibold leading-relaxed text-[#4B5168]">{stage.blurb}</p>
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="bento col-span-3 p-4 space-y-3 animate-float [animation-delay:-2s] [animation-duration:7s]">
-              <p className="flex items-center gap-1.5 text-xs font-semibold text-orange-600">
-                <Flame className="w-4 h-4 fill-orange-500 text-orange-500" /> 5-day streak
-              </p>
-              <div className="flex justify-between">
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-                  <span key={i} className="flex flex-col items-center gap-1 text-[10px] text-[#6B7280]">
-                    <span
-                      className={`w-5 h-5 rounded-full ${i < 5 ? 'bg-orange-400 animate-pop' : 'bg-[#E3E5EC]'}`}
-                      style={{ animationDelay: `${700 + i * 90}ms` }}
-                    />
-                    {d}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="bento col-span-3 p-4 space-y-2 animate-float [animation-delay:-4s] [animation-duration:8s]">
-              <p className="flex items-center gap-1.5 text-xs font-semibold text-[#3B4FE0]">
-                <FileText className="w-4 h-4" /> Cheat sheet
-              </p>
-              <p className="font-mono text-[11px] text-[#26215C] bg-[#EEEDFE] rounded-lg px-2 py-1.5">V = I × R</p>
-              <p className="font-mono text-[11px] text-[#26215C] bg-[#EEEDFE] rounded-lg px-2 py-1.5">P = V²/R</p>
-            </div>
-
-            <div className="bento col-span-6 p-4 flex gap-3 items-start animate-float [animation-delay:-1s] [animation-duration:9s]">
-              <span className="w-8 h-8 rounded-full bg-[#E1F5EE] text-[#12A594] flex items-center justify-center shrink-0">
-                <MessageCircleQuestion className="w-4 h-4" />
-              </span>
-              <div className="space-y-2 min-w-0">
-                <p className="text-xs text-[#1E2233] bg-[#F5F6FA] rounded-2xl rounded-tl-sm px-3 py-2">
-                  Why does resistance increase with length?
-                </p>
-                <p className="text-xs text-[#04342C] bg-[#E1F5EE] rounded-2xl rounded-tl-sm px-3 py-2 animate-fade-up [animation-delay:1200ms]">
-                  Longer wire → electrons collide more often, so R ∝ L. Rewatch 12:40 for the diagram.
-                </p>
-              </div>
-            </div>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* SRS §3 section 2: Jump Back In */}
-      <div data-reveal>
-        <JumpBackInCard
-          lastWatchedVideo={lastWatchedVideo}
-          isCompleted={lastWatchedVideo ? isCompleted(lastWatchedVideo.youtube_id) : false}
-          onSelectVideo={onSelectVideo}
-          onBrowse={scrollToGrid}
-        />
-      </div>
-
-      {/* SRS §3 section 3: Visual Grid */}
-      <section id="visual-grid" aria-labelledby="visual-grid-title" className="scroll-mt-24">
-        {classes.length === 0 ? <ClassGridSkeleton /> : <ClassGrid classes={classes} onSelectClass={onSelectClass} />}
+      {/* Classes: jump back in + class grid */}
+      <section className="bg-[#F5F6FA]">
+        <div className={`${WRAP} py-14 sm:py-20 space-y-10`}>
+          <div data-reveal>
+            <JumpBackInCard
+              lastWatchedVideo={lastWatchedVideo}
+              isCompleted={lastWatchedVideo ? isCompleted(lastWatchedVideo.youtube_id) : false}
+              onSelectVideo={onSelectVideo}
+              onBrowse={scrollToGrid}
+            />
+          </div>
+          <div id="visual-grid" className="scroll-mt-24">
+            {catalogLoading && classes.length === 0 ? (
+              <ClassGridSkeleton />
+            ) : classes.length === 0 ? (
+              <p className={`${card} px-6 py-10 text-center text-sm font-semibold text-[#6B7280]`}>
+                Lessons are being added. Check back soon, or sign up now and we'll be ready when you are.
+              </p>
+            ) : (
+              <ClassGrid classes={classes} onSelectClass={onSelectClass} />
+            )}
+          </div>
+        </div>
       </section>
 
-      {/* Features bento */}
-      <section id="features" aria-labelledby="features-title" className="space-y-6 scroll-mt-24">
-        <div data-reveal className="max-w-2xl space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#3B4FE0]">Everything for revision</p>
-          <h2 id="features-title" className="text-2xl sm:text-4xl font-semibold tracking-tight text-[#1E2233] text-balance">
-            One calm place to watch, revise and ask.
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-          <div data-reveal className="lg:col-span-4 lg:row-span-2 rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-[#3B4FE0] to-[#2F40BD] text-white relative overflow-hidden flex flex-col justify-between gap-8 md:col-span-2">
-            <div className="absolute -right-20 -bottom-24 w-72 h-72 rounded-full bg-[#12A594]/40 blur-3xl pointer-events-none animate-float [animation-duration:10s]" />
-            <div className="relative space-y-3 max-w-md">
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#C7EFE4]">
-                <Play className="w-3.5 h-3.5 fill-[#C7EFE4]" /> Distraction-free player
-              </span>
-              <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight">Just the lesson. Nothing else.</h3>
-              <p className="text-sm text-white/80">
-                Privacy-enhanced playback with no recommendations, comments or autoplay rabbit holes. Finish a video and it’s
-                ticked off automatically.
-              </p>
-            </div>
-            <div className="relative grid sm:grid-cols-2 gap-3 text-sm">
-              <div className="rounded-2xl bg-white/10 border border-white/15 p-4 space-y-2">
-                <p className="text-xs font-semibold text-white/70">Regular video sites</p>
-                {['Recommended videos', 'Comment threads', 'Autoplay'].map((t) => (
-                  <p key={t} className="flex items-center gap-2 text-white/80">
-                    <XCircle className="w-4 h-4 text-rose-300" /> {t}
-                  </p>
-                ))}
+      {/* Features */}
+      <section id="features" aria-labelledby="features-title" className="bg-white scroll-mt-20">
+        <div className={`${WRAP} py-14 sm:py-20 space-y-10`}>
+          <SectionTitle id="features-title" eyebrow="EVERYTHING FOR REVISION" title="One calm place to watch, revise and ask." />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {FEATURES.map((f, i) => (
+              <div key={f.title} data-reveal style={stagger(i)} className={`${card} p-5 flex flex-col gap-2.5 group`}>
+                <span
+                  className="w-11 h-11 rounded-[16px] flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6"
+                  style={{ background: f.tint, color: f.ink }}
+                >
+                  <f.Icon className="w-5 h-5" strokeWidth={2.6} />
+                </span>
+                <h3 className="text-lg text-[#1E2233]">{f.title}</h3>
+                <p className="text-[13px] font-semibold leading-relaxed text-[#4B5168]">{f.body}</p>
               </div>
-              <div className="rounded-2xl bg-white p-4 space-y-2 text-[#1E2233]">
-                <p className="text-xs font-semibold text-[#12A594]">NCERT Prep</p>
-                {['Chapter-by-chapter order', 'Notes beside every lesson', 'Progress saved'].map((t) => (
-                  <p key={t} className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#12A594]" /> {t}
-                  </p>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
-
-          {[
-            {
-              icon: <FileText className="w-5 h-5" />,
-              title: 'Notes & cheat sheets',
-              body: 'Summaries, key formulas, exam tips and downloadable PDFs for each chapter.',
-              tint: getSubjectTileStyle('Science'),
-            },
-            {
-              icon: <MessageCircleQuestion className="w-5 h-5" />,
-              title: 'Ask doubts privately',
-              body: 'Stuck on a step? Ask under the lesson and get a reply from your educator.',
-              tint: getSubjectTileStyle('Mathematics'),
-            },
-            {
-              icon: <Flame className="w-5 h-5" />,
-              title: 'Streaks & focus timer',
-              body: 'Build a daily habit with a 25-minute focus timer and an honest streak.',
-              tint: getSubjectTileStyle('English'),
-            },
-            {
-              icon: <BarChart3 className="w-5 h-5" />,
-              title: 'Progress you can see',
-              body: 'Every subject shows how much is done and what to watch next.',
-              tint: getSubjectTileStyle('Hindi'),
-            },
-            {
-              icon: <Bell className="w-5 h-5" />,
-              title: 'Gentle reminders',
-              body: 'Optional daily or weekly emails at IST times, one-click unsubscribe.',
-              tint: getSubjectTileStyle('Physics'),
-            },
-          ].map((f, i) => (
-            <div key={f.title} data-reveal style={stagger(i + 1)} className="bento bento-hover p-6 space-y-3 lg:col-span-2 group">
-              <span
-                className="w-10 h-10 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6"
-                style={{ backgroundColor: f.tint.bg, color: f.tint.text }}
-              >
-                {f.icon}
-              </span>
-              <h3 className="text-lg font-semibold tracking-tight text-[#1E2233]">{f.title}</h3>
-              <p className="text-sm text-[#6B7280]">{f.body}</p>
-            </div>
-          ))}
         </div>
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" data-reveal aria-labelledby="how-title" className="bento p-6 sm:p-10 scroll-mt-24">
-        <h2 id="how-title" className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1E2233] mb-8">
-          How it works
-        </h2>
-        <ol className="grid md:grid-cols-3 gap-8">
-          {[
-            ['Pick your class', 'Tell us the class you study in. Your dashboard, syllabus and search follow it.', <BookOpen key="i" className="w-5 h-5" />],
-            ['Watch & tick off', 'Go chapter by chapter. Finished lessons are marked automatically.', <Play key="i" className="w-5 h-5" />],
-            ['Revise & ask', 'Open the cheat sheet before exams, use the focus timer, and ask doubts when stuck.', <Timer key="i" className="w-5 h-5" />],
-          ].map(([title, body, icon], i) => (
-            <li key={title as string} data-reveal style={stagger(i + 1, 150)} className="space-y-3">
-              <div className="flex items-center gap-3">
-                <span className="w-9 h-9 rounded-full bg-[#3B4FE0] text-white text-sm font-semibold flex items-center justify-center">
+      <section id="how-it-works" aria-labelledby="how-title" className="bg-[#F5F6FA] scroll-mt-20">
+        <div className={`${WRAP} py-14 sm:py-20 space-y-10`}>
+          <SectionTitle id="how-title" eyebrow="HOW IT WORKS" title="Three steps to a calmer study routine." />
+          <ol className="grid md:grid-cols-3 gap-5">
+            {STEPS.map(([title, body, bg, edge], i) => (
+              <li key={title} data-reveal style={stagger(i + 1, 150)} className={`${card} p-6 flex flex-col gap-2.5`}>
+                <span
+                  className="w-11 h-11 rounded-[15px] font-display text-lg flex items-center justify-center"
+                  style={{ background: bg, boxShadow: `0 4px 0 ${edge}`, color: i === 2 ? '#1E2233' : '#fff' }}
+                >
                   {i + 1}
                 </span>
-                <span className="text-[#3B4FE0]">{icon}</span>
-              </div>
-              <h3 className="text-lg font-semibold text-[#1E2233]">{title}</h3>
-              <p className="text-sm text-[#6B7280]">{body}</p>
-            </li>
-          ))}
-        </ol>
+                <h3 className="text-lg text-[#1E2233]">{title}</h3>
+                <p className="text-[13px] font-semibold leading-relaxed text-[#4B5168]">{body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
       </section>
 
       {/* Closing CTA */}
-      <section data-reveal className="relative overflow-hidden rounded-[2rem] p-8 sm:p-14 text-center bg-gradient-to-br from-[#3B4FE0] via-[#4B5CF0] to-[#12A594] text-white">
-        <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-white/10 blur-2xl pointer-events-none animate-float [animation-duration:9s]" />
-        <div className="absolute -bottom-24 -right-16 w-80 h-80 rounded-full bg-[#12A594]/40 blur-2xl pointer-events-none animate-float [animation-delay:-3s] [animation-duration:11s]" />
-        <div className="relative space-y-6 max-w-2xl mx-auto">
-          <Sparkles className="w-8 h-8 mx-auto text-white/80 animate-pulse" />
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-balance">
-            Your next chapter is one tap away.
-          </h2>
-          <p className="text-white/85">Free to use. Pick your class and start where it matters most.</p>
-          <div className="flex flex-col sm:flex-row justify-center gap-3">
-            <button
-              onClick={onLaunchDemoAuth}
-              className="px-6 py-3.5 rounded-2xl text-sm font-semibold text-[#1E2233] bg-white hover:bg-[#F5F6FA] cursor-pointer"
-            >
-              Start learning free
-            </button>
-            <button
-              onClick={scrollToGrid}
-              className="px-6 py-3.5 rounded-2xl text-sm font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/30 cursor-pointer"
-            >
-              Browse by class
-            </button>
+      <section className="bg-[#F5F6FA]">
+        <div className={`${WRAP} pb-20`}>
+          <div data-reveal className="relative overflow-hidden rounded-[32px] p-8 sm:p-14 text-center bg-[#FFC53D] border-[3px] border-[#E0A81F] shadow-[0_7px_0_#E0A81F]">
+            <span aria-hidden="true" className="absolute -top-16 -left-16 w-56 h-56 rounded-full bg-white/25 animate-float [animation-duration:9s]" />
+            <span aria-hidden="true" className="absolute -bottom-20 -right-12 w-64 h-64 rounded-full bg-[#FF7A59]/20 animate-float [animation-delay:-3s] [animation-duration:11s]" />
+            <div className="relative flex flex-col items-center gap-4 max-w-2xl mx-auto">
+              <h2 className="text-[30px] sm:text-[38px] leading-tight text-[#1E2233] text-balance">Your next chapter is one tap away.</h2>
+              <p className="text-[15px] font-bold text-[#7A5C10]">{TAGLINE}. Free to use: pick your class and start where it matters most.</p>
+              <div className="flex flex-col sm:flex-row justify-center gap-3 mt-2">
+                <button onClick={onLaunchDemoAuth} className={`${btnPrimary} px-6 py-3.5`}>
+                  Start learning free
+                </button>
+                <button onClick={onExploreCurriculum} className={`${btnSecondary} px-6 py-3.5`}>
+                  Try the demo
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>

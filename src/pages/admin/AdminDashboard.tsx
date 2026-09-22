@@ -140,19 +140,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {!hideSidebar && (
           <aside className="lg:w-60 shrink-0">
           <div className="lg:sticky lg:top-24 space-y-3">
-            <div className="bg-slate-900 text-white rounded-2xl p-4 space-y-3">
+            <div className="bg-slate-900 text-white rounded-[22px] p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
+                <span className="w-8 h-8 rounded-[14px] bg-white/10 flex items-center justify-center">
                   <Shield className="w-4 h-4 text-purple-300" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold">Admin Dashboard</p>
+                  <p className="text-sm font-extrabold">Admin Dashboard</p>
                   <p className="text-[11px] text-slate-400 truncate">{user?.email || adminName}</p>
                 </div>
               </div>
               <button
                 onClick={onBackToApp}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer transition-colors"
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-white/10 hover:bg-white/20 cursor-pointer transition-colors"
                 title="View student curriculum and syllabus"
               >
                 <Eye className="w-3.5 h-3.5 text-purple-200" />
@@ -162,7 +162,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <nav
               aria-label="Admin sections"
-              className="flex lg:flex-col gap-1 overflow-x-auto bg-white border border-[#E3E5EC] rounded-2xl p-1.5"
+              className="flex lg:flex-col gap-1 overflow-x-auto bg-white border-2 border-[#E3E5EC] rounded-[22px] p-1.5"
             >
               {navItems.map((item) => {
                 const active = section === item.id;
@@ -171,7 +171,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     key={item.id}
                     onClick={() => navigate(item.id)}
                     aria-current={active ? 'page' : undefined}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-[14px] text-sm font-bold whitespace-nowrap transition-colors cursor-pointer ${
                       active ? 'bg-[#3B4FE0] text-white' : 'text-[#1E2233] hover:bg-[#F5F6FA]'
                     }`}
                   >
@@ -179,8 +179,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <span className="flex-1 text-left">{item.label}</span>
                     {item.badge ? (
                       <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                          active ? 'bg-white/25 text-white' : 'bg-rose-100 text-rose-700'
+                        className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                          active ? 'bg-white/25 text-white' : 'bg-[#FFDCD0] text-[#C24A2C]'
                         }`}
                       >
                         {item.badge}

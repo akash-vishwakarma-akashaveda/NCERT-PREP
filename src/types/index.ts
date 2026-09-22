@@ -12,6 +12,12 @@ export interface Video {
   isPremium: boolean;
   pyq_available?: boolean;
   created_at?: number | string;
+  /** Sheet-owned: false while the YouTube upload is not public yet ("YT Vid Published" != PUBLISH_OK). Students never see it. */
+  yt_public?: boolean;
+  /** Sheet-owned: NCERT chapter PDF ("url" column). */
+  pdf_url?: string;
+  /** Sheet-owned: "mm:ss - topic" lines, one per line ("Timestamps" column). */
+  timestamps?: string;
 }
 
 export interface User {
@@ -32,7 +38,23 @@ export interface User {
   last_watched_video: string | null;
   onboarding_completed?: boolean;
   focus_subjects?: string[];
+  xp?: number;
+  level?: number;
   created_at?: string | number;
+  /** DPDP consent, written only by Cloud Functions (demo: locally). Missing = not given yet. */
+  consent?: UserConsent;
+}
+
+export interface UserConsent {
+  status: 'granted' | 'pending_parent';
+  age_group: 'adult' | 'child';
+  method: 'self' | 'parent';
+  notice_version: string;
+  language?: 'en' | 'hi';
+  parent_name?: string;
+  parent_email?: string;
+  granted_at?: unknown;
+  requested_at?: unknown;
 }
 
 export interface UserProgress {
@@ -82,6 +104,7 @@ export interface ChapterGroup {
   key: string;
   class_sort: string;
   subject: string;
+  textbook?: string;
   chapter_id: string;
   chapter_name: string;
   videos: Video[];
@@ -107,9 +130,10 @@ export interface CurriculumSubject {
 }
 
 export interface CurriculumChapter {
-  id: string; // `${subjectId}_${slug(chapter_id)}`
+  id: string; // chapterKey(class_sort, subject, chapter_id, textbook)
   class_sort: string;
   subject: string;
+  textbook?: string; // must match videos.textbook; one subject can have several books
   chapter_id: string; // must match videos.chapter_id
   chapter_name: string;
   order: number;
@@ -146,6 +170,7 @@ export interface ChapterNotes {
 export interface NotesTarget {
   class_sort: string;
   subject: string;
+  textbook?: string;
   chapter_id: string;
   chapter_name: string;
 }
@@ -173,3 +198,41 @@ export interface Doubt {
   created_at: number;
   updated_at: number;
 }
+
+// ---- Leaderboard (class-scoped student XP rankings) ----
+export interface LeaderboardEntry {
+  userId: string;
+  displayName: string;
+  class_sort: string;
+  xp: number;
+  completedCount: number;
+  streak_days: number;
+  level: number;
+  last_active_date?: string;
+  avatarSeed?: string;
+  photoURL?: string | null;
+  updated_at: number;
+}
+
+// ---- XP Credits & History Ledger ----
+export type XpSourceType =
+  | 'lesson_completed'
+  | 'lesson_uncompleted'
+  | 'focus_session'
+  | 'streak_bonus'
+  | 'notes_revision'
+  | 'doubt_asked'
+  | 'welcome_bonus';
+
+export interface XpTransaction {
+  id: string;
+  userId: string;
+  amount: number; // e.g. +50, +25, +20, or -50 if reverted
+  type: XpSourceType;
+  description: string;
+  sourceId?: string; // e.g. youtube_id or date key
+  class_sort?: string; // Academic class where XP was earned, e.g. '10', '09'
+  timestamp: number;
+  balanceAfter: number;
+}
+

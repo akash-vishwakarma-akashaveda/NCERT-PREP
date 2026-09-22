@@ -2,16 +2,16 @@ import React, { useCallback, useState } from 'react';
 import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
 
 export const inputClass =
-  'w-full px-3 py-2 text-sm border border-[#E3E5EC] rounded-xl bg-white text-[#1E2233] focus:border-[#3B4FE0] focus:ring-1 focus:ring-[#3B4FE0] outline-none disabled:bg-[#F5F6FA] disabled:text-[#6B7280]';
+  'w-full px-3.5 py-2.5 text-sm font-semibold border-2 border-[#E3E5EC] rounded-[14px] bg-[#F7F8FC] text-[#1E2233] focus:border-[#3B4FE0] focus:bg-white outline-none disabled:bg-[#F5F6FA] disabled:text-[#6B7280]';
 
 export const primaryButton =
-  'inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
+  'btn-3d [--edge:#2A3BB8] inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-[12.5px] font-extrabold text-white bg-[#3B4FE0] hover:bg-[#3446D6] rounded-[14px] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
 
 export const secondaryButton =
-  'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#1E2233] bg-white border border-[#E3E5EC] hover:bg-[#F5F6FA] rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
+  'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-[12.5px] font-extrabold text-[#4B5168] bg-white border-2 border-[#E3E5EC] hover:bg-[#F7F8FC] rounded-[14px] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
 
 export const dangerButton =
-  'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-xl transition-colors cursor-pointer disabled:opacity-50';
+  'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-[12.5px] font-extrabold text-[#C24A2C] bg-[#FFE9E2] border-2 border-[#FFC3B1] hover:bg-[#FFDCD0] rounded-[14px] transition-colors cursor-pointer disabled:opacity-50';
 
 export type Notify = (text: string, type?: 'success' | 'error') => void;
 
@@ -26,10 +26,10 @@ export function useToast() {
   const node = toast ? (
     <div
       role="status"
-      className={`fixed bottom-24 sm:bottom-8 right-4 left-4 sm:left-auto sm:max-w-sm z-[60] p-4 rounded-2xl border shadow-lg text-sm font-semibold flex items-start gap-2.5 ${
+      className={`fixed bottom-24 sm:bottom-8 right-4 left-4 sm:left-auto sm:max-w-sm z-[60] p-4 rounded-[20px] border-[3px] text-sm font-bold flex items-start gap-2.5 animate-pop-soft ${
         toast.type === 'success'
-          ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-          : 'bg-rose-50 text-rose-900 border-rose-200'
+          ? 'bg-[#E7F7F1] text-[#0B5E50] border-[#A9E6D3] shadow-[0_5px_0_#A9E6D3]'
+          : 'bg-[#FFE9E2] text-[#8A2E17] border-[#FFC3B1] shadow-[0_5px_0_#FFC3B1]'
       }`}
     >
       {toast.type === 'success' ? (
@@ -54,15 +54,15 @@ export const SectionHeader: React.FC<{ title: string; description?: string; acti
 }) => (
   <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
     <div>
-      <h2 className="text-xl font-extrabold text-[#1E2233] tracking-tight">{title}</h2>
-      {description && <p className="text-xs text-[#6B7280] mt-0.5 max-w-2xl">{description}</p>}
+      <h2 className="text-[22px] text-[#1E2233]">{title}</h2>
+      {description && <p className="text-[12.5px] font-semibold text-[#6B7280] mt-0.5 max-w-2xl">{description}</p>}
     </div>
     {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
   </div>
 );
 
 export const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`bg-white border border-[#E3E5EC] rounded-2xl shadow-2xs ${className}`}>{children}</div>
+  <div className={`bg-white border-[3px] border-[#EDEFF6] rounded-[24px] ${className}`}>{children}</div>
 );
 
 export const StatCard: React.FC<{
@@ -75,21 +75,21 @@ export const StatCard: React.FC<{
   const toneClass = {
     indigo: 'text-[#3B4FE0]',
     teal: 'text-[#12A594]',
-    amber: 'text-amber-600',
-    rose: 'text-rose-600',
+    amber: 'text-[#C98A0E]',
+    rose: 'text-[#E0603F]',
     slate: 'text-[#1E2233]',
   }[tone];
   const Tag = onClick ? 'button' : 'div';
   return (
     <Tag
       onClick={onClick}
-      className={`text-left bg-white p-5 rounded-2xl border border-[#E3E5EC] shadow-2xs space-y-1 ${
-        onClick ? 'hover:border-[#3B4FE0]/40 hover:shadow-xs transition-all cursor-pointer' : ''
+      className={`text-left bg-white p-[17px] rounded-[22px] border-[3px] border-[#EDEFF6] shadow-[0_5px_0_#EDEFF6] flex flex-col gap-1 ${
+        onClick ? 'hover:border-[#C7CDF8] hover:shadow-[0_5px_0_#C7CDF8] transition-colors cursor-pointer' : ''
       }`}
     >
-      <p className="text-xs text-[#6B7280] font-semibold">{label}</p>
-      <p className={`text-2xl font-extrabold ${toneClass}`}>{value}</p>
-      {hint && <p className="text-[11px] text-[#6B7280]">{hint}</p>}
+      <p className={`font-display text-[27px] leading-none ${toneClass}`}>{value}</p>
+      <p className="text-[10.5px] font-extrabold tracking-[0.05em] text-[#6B7280] uppercase">{label}</p>
+      {hint && <p className="text-[11px] font-bold text-[#9AA1B4]">{hint}</p>}
     </Tag>
   );
 };
@@ -101,9 +101,9 @@ export const EmptyState: React.FC<{ icon: React.ReactNode; title: string; body?:
   action,
 }) => (
   <div className="py-12 px-6 text-center space-y-2">
-    <div className="w-10 h-10 mx-auto text-slate-400 flex items-center justify-center">{icon}</div>
-    <p className="text-sm font-semibold text-[#1E2233]">{title}</p>
-    {body && <p className="text-xs text-[#6B7280] max-w-md mx-auto">{body}</p>}
+    <div className="w-12 h-12 mx-auto rounded-[16px] bg-[#EEF0FE] text-[#3B4FE0] flex items-center justify-center">{icon}</div>
+    <p className="font-display text-base text-[#1E2233]">{title}</p>
+    {body && <p className="text-xs font-semibold text-[#6B7280] max-w-md mx-auto">{body}</p>}
     {action && <div className="pt-2">{action}</div>}
   </div>
 );
@@ -121,13 +121,13 @@ export const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void
     aria-label={label}
     disabled={disabled}
     onClick={() => onChange(!checked)}
-    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors disabled:opacity-50 ${
-      checked ? 'bg-[#12A594]' : 'bg-[#CBD5E1]'
+    className={`relative inline-flex h-[27px] w-12 shrink-0 cursor-pointer rounded-full p-[3px] transition-colors disabled:opacity-50 ${
+      checked ? 'bg-[#12A594]' : 'bg-[#D7DCEF]'
     }`}
   >
     <span
-      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${
-        checked ? 'translate-x-4' : 'translate-x-0'
+      className={`pointer-events-none inline-block h-[21px] w-[21px] transform rounded-full bg-white transition ${
+        checked ? 'translate-x-[21px]' : 'translate-x-0'
       }`}
     />
   </button>
@@ -147,16 +147,16 @@ export const Modal: React.FC<{ title: string; subtitle?: string; onClose: () => 
     onClick={onClose}
   >
     <div
-      className={`w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} max-h-[90vh] flex flex-col bg-white rounded-3xl shadow-xl border border-[#E3E5EC] overflow-hidden`}
+      className={`w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} max-h-[90vh] flex flex-col bg-white rounded-[28px] border-[3px] border-[#EDEFF6] shadow-[0_8px_0_#E3E5EC] overflow-hidden animate-pop-soft`}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="px-6 pt-5 pb-4 border-b border-[#E3E5EC] flex items-start justify-between gap-3">
+      <div className="px-6 pt-5 pb-4 border-b-2 border-[#EDEFF6] flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-[#1E2233]">{title}</h3>
-          {subtitle && <p className="text-xs text-[#6B7280]">{subtitle}</p>}
+          <h3 className="text-xl text-[#1E2233]">{title}</h3>
+          {subtitle && <p className="text-xs font-semibold text-[#6B7280]">{subtitle}</p>}
         </div>
-        <button onClick={onClose} aria-label="Close" className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg cursor-pointer">
-          <X className="w-5 h-5" />
+        <button onClick={onClose} aria-label="Close" className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#F5F6FA] border-2 border-[#E3E5EC] text-[#6B7280] hover:text-[#1E2233] cursor-pointer">
+          <X className="w-4 h-4" />
         </button>
       </div>
       <div className="p-6 overflow-y-auto">{children}</div>

@@ -10,7 +10,7 @@ import {
 } from '../types';
 import { FirestoreService } from '../services/firestore';
 import { CurriculumService, CurriculumRecords } from '../services/content';
-import { compareChapterIds, compareVideosInSyllabusOrder } from '../data/classFormat';
+import { compareBooks, compareChapterIds, compareVideosInSyllabusOrder } from '../data/classFormat';
 import { chapterKey, subjectKey } from '../data/curriculumKeys';
 
 const EMPTY_RECORDS: CurriculumRecords = { classes: [], subjects: [], chapters: [] };
@@ -57,16 +57,24 @@ export function useCatalog() {
     () => new Map<string, CurriculumChapter>(records.chapters.map((r) => [r.id, r])),
     [records.chapters]
   );
+  // Records saved before chapter keys included the book are still found by their old key.
+  const chapterRecord = useCallback(
+    (classSort: string, subject: string, chapterId: string, textbook?: string) =>
+      chapterRecords.get(chapterKey(classSort, subject, chapterId, textbook)) ??
+      (textbook ? chapterRecords.get(chapterKey(classSort, subject, chapterId)) : undefined),
+    [chapterRecords]
+  );
 
   const activeVideos = useMemo(() => {
     return allVideos.filter((v) => {
       if (!v.isActive) return false;
+      if (v.yt_public === false) return false;
       if (classRecords.get(v.class_sort)?.isActive === false) return false;
       if (subjectRecords.get(subjectKey(v.class_sort, v.subject))?.isActive === false) return false;
-      if (chapterRecords.get(chapterKey(v.class_sort, v.subject, v.chapter_id))?.isActive === false) return false;
+      if (chapterRecord(v.class_sort, v.subject, v.chapter_id, v.textbook)?.isActive === false) return false;
       return true;
     });
-  }, [allVideos, classRecords, subjectRecords, chapterRecords]);
+  }, [allVideos, classRecords, subjectRecords, chapterRecords, chapterRecord]);
 
   const videoMap = useMemo(() => {
     const map = new Map<string, Video>();
@@ -118,14 +126,15 @@ export function useCatalog() {
         .forEach((v) => {
           const sub = ensureSubject(v.subject);
           sub.count += 1;
-          const key = chapterKey(classSort, v.subject, v.chapter_id);
+          const key = chapterKey(classSort, v.subject, v.chapter_id, v.textbook);
           if (!sub.chapters.has(key)) {
             sub.chapters.set(key, {
               key,
               class_sort: classSort,
               subject: v.subject,
+              textbook: v.textbook,
               chapter_id: v.chapter_id,
-              chapter_name: chapterRecords.get(key)?.chapter_name || v.chapter_name,
+              chapter_name: chapterRecord(classSort, v.subject, v.chapter_id, v.textbook)?.chapter_name || v.chapter_name,
               videos: [],
             });
           }
@@ -145,11 +154,14 @@ export function useCatalog() {
         )
         .forEach((c) => {
           const sub = ensureSubject(c.subject);
+          // A record saved before keys carried the book overlays its video chapter instead of adding an empty one.
+          if (!c.textbook && Array.from(sub.chapters.values()).some((ch) => ch.chapter_id === c.chapter_id)) return;
           if (!sub.chapters.has(c.id)) {
             sub.chapters.set(c.id, {
               key: c.id,
               class_sort: c.class_sort,
               subject: c.subject,
+              textbook: c.textbook,
               chapter_id: c.chapter_id,
               chapter_name: c.chapter_name,
               videos: [],
@@ -158,20 +170,20 @@ export function useCatalog() {
         });
 
       const subjectOrder = (name: string) => subjectRecords.get(subjectKey(classSort, name))?.order ?? 999;
-      const chapterOrder = (ch: ChapterGroup) => chapterRecords.get(ch.key)?.order ?? 999;
+      const chapterOrder = (ch: ChapterGroup) => chapterRecord(classSort, ch.subject, ch.chapter_id, ch.textbook)?.order ?? 999;
 
       return Array.from(subjectMap.entries())
         .map(([name, data]) => ({
           name,
           textbook: subjectRecords.get(subjectKey(classSort, name))?.textbook,
           chapters: Array.from(data.chapters.values()).sort(
-            (a, b) => chapterOrder(a) - chapterOrder(b) || compareChapterIds(a.chapter_id, b.chapter_id)
+            (a, b) => compareBooks(a.textbook, b.textbook) || chapterOrder(a) - chapterOrder(b) || compareChapterIds(a.chapter_id, b.chapter_id)
           ),
           videoCount: data.count,
         }))
         .sort((a, b) => subjectOrder(a.name) - subjectOrder(b.name) || a.name.localeCompare(b.name));
     },
-    [activeVideos, records, classRecords, subjectRecords, chapterRecords]
+    [activeVideos, records, classRecords, subjectRecords, chapterRecord]
   );
 
   return {

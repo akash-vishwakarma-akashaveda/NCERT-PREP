@@ -3,6 +3,7 @@ import { MessageCircleQuestion, FileWarning, ArrowRight, Sliders } from 'lucide-
 import { ChapterNotes, Doubt, Feedback, Video } from '../../types';
 import { AdminClassNode } from './adminTree';
 import { Card, SectionHeader, StatCard } from './adminUi';
+import { GrowthPanel } from './GrowthPanel';
 import type { AdminNavigateOptions, AdminSectionId } from './AdminDashboard';
 import { useDashboardConfig } from '../../hooks/useDashboardConfig';
 
@@ -59,6 +60,8 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
         description="What needs your attention today, and how complete each class is."
       />
 
+      <GrowthPanel totalStudents={studentStats?.total} />
+
       <div className="grid grid-cols-2 xl:grid-cols-5 gap-3">
         <StatCard
           label="Students"
@@ -85,21 +88,21 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
       </div>
 
       {/* Student Dashboard Direct Control Card */}
-      <Card className="p-4 bg-gradient-to-r from-[#EEF0FD]/80 via-white to-purple-50/60 border border-[#3B4FE0]/20">
+      <Card className="p-4 bg-gradient-to-r from-[#EEF0FD]/80 via-white to-purple-50/60 border-2 border-[#3B4FE0]/20">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-[#3B4FE0] text-white flex items-center justify-center">
+              <span className="w-6 h-6 rounded-xl bg-[#3B4FE0] text-white flex items-center justify-center">
                 <Sliders className="w-3.5 h-3.5" />
               </span>
-              <h3 className="text-sm font-bold text-[#1E2233]">Student Dashboard Live Status</h3>
+              <h3 className="text-sm font-extrabold text-[#1E2233]">Student Dashboard Live Status</h3>
               {liveAnn ? (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-[#E7F7F1] text-[#0B7A67]">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Broadcast Live
                 </span>
               ) : (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                   No Active Broadcast
                 </span>
               )}
@@ -115,7 +118,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
           </div>
           <button
             onClick={() => onNavigate('student-control')}
-            className="self-start md:self-auto flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-[#3B4FE0] text-white hover:bg-[#2F3FB5] shadow-sm transition-colors cursor-pointer shrink-0"
+            className="self-start md:self-auto flex items-center gap-1.5 px-3.5 py-2 text-xs font-extrabold rounded-[14px] bg-[#3B4FE0] text-white hover:bg-[#2F3FB5] shadow-[0_5px_0_#EDEFF6] transition-colors cursor-pointer shrink-0"
           >
             <Sliders className="w-3.5 h-3.5" />
             Manage Student Dashboard
@@ -127,11 +130,11 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <Card className="p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-[#1E2233] flex items-center gap-2">
-              <MessageCircleQuestion className="w-4 h-4 text-rose-600" />
+            <h3 className="text-sm font-extrabold text-[#1E2233] flex items-center gap-2">
+              <MessageCircleQuestion className="w-4 h-4 text-[#C24A2C]" />
               Doubts waiting longest
             </h3>
-            <button onClick={() => onNavigate('doubts')} className="text-xs font-bold text-[#3B4FE0] hover:underline cursor-pointer">
+            <button onClick={() => onNavigate('doubts')} className="text-xs font-extrabold text-[#3B4FE0] hover:underline cursor-pointer">
               Open inbox
             </button>
           </div>
@@ -146,7 +149,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
                     className="w-full text-left py-2.5 flex items-center justify-between gap-3 cursor-pointer group"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[#1E2233] truncate group-hover:text-[#3B4FE0]">{d.question}</p>
+                      <p className="text-sm font-bold text-[#1E2233] truncate group-hover:text-[#3B4FE0]">{d.question}</p>
                       <p className="text-[11px] text-[#6B7280] truncate">
                         {d.userName || d.userEmail || 'Student'} • Class {parseInt(d.class_sort, 10)} {d.subject} • {d.chapter_name}
                       </p>
@@ -161,11 +164,11 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
 
         <Card className="p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-[#1E2233] flex items-center gap-2">
-              <FileWarning className="w-4 h-4 text-amber-600" />
+            <h3 className="text-sm font-extrabold text-[#1E2233] flex items-center gap-2">
+              <FileWarning className="w-4 h-4 text-[#C98A0E]" />
               Chapters with lessons but no notes
             </h3>
-            <button onClick={() => onNavigate('notes')} className="text-xs font-bold text-[#3B4FE0] hover:underline cursor-pointer">
+            <button onClick={() => onNavigate('notes')} className="text-xs font-extrabold text-[#3B4FE0] hover:underline cursor-pointer">
               All notes
             </button>
           </div>
@@ -180,12 +183,12 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
                     className="w-full text-left py-2.5 flex items-center justify-between gap-3 cursor-pointer group"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[#1E2233] truncate group-hover:text-[#3B4FE0]">{ch.chapter_name}</p>
+                      <p className="text-sm font-bold text-[#1E2233] truncate group-hover:text-[#3B4FE0]">{ch.chapter_name}</p>
                       <p className="text-[11px] text-[#6B7280]">
                         Class {parseInt(ch.class_sort, 10)} • {ch.subject} • {ch.videoCount} lessons
                       </p>
                     </div>
-                    <span className="text-xs font-bold text-[#3B4FE0] flex items-center gap-1 shrink-0">
+                    <span className="text-xs font-extrabold text-[#3B4FE0] flex items-center gap-1 shrink-0">
                       Write notes <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </button>
@@ -198,14 +201,14 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
 
       <Card className="overflow-hidden">
         <div className="px-5 py-4 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-[#1E2233]">Class coverage</h3>
-          <button onClick={() => onNavigate('curriculum')} className="text-xs font-bold text-[#3B4FE0] hover:underline cursor-pointer">
+          <h3 className="text-sm font-extrabold text-[#1E2233]">Class coverage</h3>
+          <button onClick={() => onNavigate('curriculum')} className="text-xs font-extrabold text-[#3B4FE0] hover:underline cursor-pointer">
             Manage classes
           </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#F5F6FA] text-[#6B7280] font-bold border-y border-[#E3E5EC]">
+            <thead className="bg-[#F5F6FA] text-[#6B7280] font-extrabold border-y border-[#E3E5EC]">
               <tr>
                 <th className="py-2.5 px-5">Class</th>
                 <th className="py-2.5 px-3">Students</th>
@@ -224,7 +227,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
                 const pct = chapters.length ? Math.round((withNotes / chapters.length) * 100) : 0;
                 return (
                   <tr key={c.class_sort}>
-                    <td className="py-2.5 px-5 font-bold">{c.name}</td>
+                    <td className="py-2.5 px-5 font-extrabold">{c.name}</td>
                     <td className="py-2.5 px-3">{studentStats ? studentStats.byClass[c.class_sort] ?? 0 : '—'}</td>
                     <td className="py-2.5 px-3">{c.subjects.length}</td>
                     <td className="py-2.5 px-3">{chapters.length}</td>
@@ -234,14 +237,14 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
                         <div className="flex-1 h-1.5 bg-[#E3E5EC] rounded-full overflow-hidden">
                           <div className="h-full bg-[#12A594]" style={{ width: `${pct}%` }} />
                         </div>
-                        <span className="font-semibold">{pct}%</span>
+                        <span className="font-bold">{pct}%</span>
                       </div>
                     </td>
                     <td className="py-2.5 px-3">{openDoubts.filter((d) => d.class_sort === c.class_sort).length}</td>
                     <td className="py-2.5 px-3">
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                          c.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
+                        className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                          c.isActive ? 'bg-[#E7F7F1] text-[#0B7A67]' : 'bg-slate-200 text-slate-700'
                         }`}
                       >
                         {c.isActive ? 'Visible' : 'Hidden'}

@@ -108,14 +108,14 @@ export const DoubtsSection: React.FC<DoubtsSectionProps> = ({
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex bg-white border border-[#E3E5EC] rounded-xl p-1" role="tablist">
+        <div className="flex bg-white border-2 border-[#E3E5EC] rounded-[14px] p-1" role="tablist">
           {tabs.map((t) => (
             <button
               key={t.id}
               role="tab"
               aria-selected={filter === t.id}
               onClick={() => setFilter(t.id)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-extrabold rounded-xl cursor-pointer ${
                 filter === t.id ? 'bg-[#3B4FE0] text-white' : 'text-[#6B7280] hover:text-[#1E2233]'
               }`}
             >
@@ -155,7 +155,7 @@ export const DoubtsSection: React.FC<DoubtsSectionProps> = ({
                       <DoubtStatusBadge status={d.status} adminView />
                       <span className="text-[11px] text-[#6B7280]">{new Date(d.created_at).toLocaleDateString()}</span>
                     </div>
-                    <p className="text-sm font-semibold text-[#1E2233] line-clamp-2">{d.question}</p>
+                    <p className="text-sm font-bold text-[#1E2233] line-clamp-2">{d.question}</p>
                     <p className="text-[11px] text-[#6B7280] truncate">
                       {d.userName || d.userEmail || 'Student'} • Class {parseInt(d.class_sort, 10)} {d.subject} • {d.chapter_name}
                     </p>
@@ -175,7 +175,7 @@ export const DoubtsSection: React.FC<DoubtsSectionProps> = ({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-1">
                 <DoubtStatusBadge status={selected.status} adminView />
-                <p className="text-sm font-bold text-[#1E2233]">
+                <p className="text-sm font-extrabold text-[#1E2233]">
                   {selected.userName || 'Student'}
                   {selected.userEmail && <span className="font-normal text-[#6B7280]"> • {selected.userEmail}</span>}
                 </p>
@@ -193,7 +193,7 @@ export const DoubtsSection: React.FC<DoubtsSectionProps> = ({
               )}
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#F5F6FA] border border-[#E3E5EC] text-sm text-[#1E2233] whitespace-pre-line">
+            <div className="p-4 rounded-[22px] bg-[#F5F6FA] border-2 border-[#E3E5EC] text-sm text-[#1E2233] whitespace-pre-line">
               {selected.question}
             </div>
 
@@ -205,7 +205,7 @@ export const DoubtsSection: React.FC<DoubtsSectionProps> = ({
             )}
 
             <label className="block space-y-1">
-              <span className="text-xs font-bold text-[#1E2233]">{selected.answer ? 'Edit reply' : 'Your reply'}</span>
+              <span className="text-xs font-extrabold text-[#1E2233]">{selected.answer ? 'Edit reply' : 'Your reply'}</span>
               <textarea
                 rows={6}
                 value={answer}

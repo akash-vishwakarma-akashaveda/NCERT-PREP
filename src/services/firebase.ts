@@ -4,7 +4,6 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 import { getFunctions, Functions } from 'firebase/functions';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
-import { getAnalytics, isSupported as analyticsSupported } from 'firebase/analytics';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
@@ -13,7 +12,6 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
   appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || undefined,
 };
 
 export const isFirebaseConfigured = Boolean(
@@ -55,14 +53,8 @@ if (isFirebaseConfigured) {
     googleProvider = new GoogleAuthProvider();
     googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-    if (firebaseConfig.measurementId) {
-      const firebaseApp = app;
-      analyticsSupported()
-        .then((supported) => {
-          if (supported) getAnalytics(firebaseApp);
-        })
-        .catch(() => undefined);
-    }
+    // No Google Analytics: it sets tracking cookies before consent and would track children (DPDP s.9).
+    // Visitor and usage counts come from our own server-side counters (functions/src/stats.ts).
   } catch (error) {
     console.error('Failed to initialize Firebase SDK:', error);
   }

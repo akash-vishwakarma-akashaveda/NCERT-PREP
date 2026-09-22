@@ -73,23 +73,28 @@ export const LessonPlayer: React.FC<LessonPlayerProps> = ({ youtubeId, title, on
   }, [youtubeId, attempt]);
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-[#0F1320]">
+    <div className="relative aspect-video w-full overflow-hidden rounded-[26px] border-[3px] border-[#1E2233] shadow-[0_7px_0_#1E2233] bg-[#12203A]">
       {failed ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-white">
           <AlertTriangle className="w-8 h-8 text-amber-400" />
-          <p className="text-base font-semibold">This video can&apos;t be played right now</p>
+          <p className="font-display text-lg">This video can&apos;t be played right now</p>
           <p className="text-sm text-white/70 max-w-sm">
             It may have been removed or you may be offline. Try again, or continue with another lesson.
           </p>
           <button
             onClick={() => setAttempt((n) => n + 1)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-white/10 hover:bg-white/20 cursor-pointer"
+            className="btn-3d [--edge:#E0A81F] inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-extrabold text-[#1E2233] bg-[#FFC53D] cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" /> Try again
           </button>
         </div>
       ) : (
-        !ready && <div className="absolute inset-0 flex items-center justify-center text-sm text-white/60">Loading video…</div>
+        !ready && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm font-bold text-white/70">
+            <span className="w-16 h-16 rounded-full bg-[#FFC53D] border-4 border-white animate-bob" aria-hidden="true" />
+            Loading video…
+          </div>
+        )
       )}
       <div
         ref={hostRef}

@@ -267,18 +267,18 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ tree, notes, reloadN
                   <button
                     onClick={() => selectChapter(ch.key)}
                     aria-current={ch.key === selectedKey ? 'true' : undefined}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl border cursor-pointer transition-colors ${
+                    className={`w-full text-left px-3 py-2.5 rounded-[14px] border cursor-pointer transition-colors ${
                       ch.key === selectedKey ? 'border-[#3B4FE0] bg-[#EEEDFE]/60' : 'border-transparent hover:bg-[#F5F6FA]'
                     }`}
                   >
-                    <p className="text-sm font-semibold text-[#1E2233] truncate">
+                    <p className="text-sm font-bold text-[#1E2233] truncate">
                       {ch.chapter_id} · {ch.chapter_name}
                     </p>
                     <p className="text-[11px] text-[#6B7280] flex items-center gap-1.5 flex-wrap">
                       <span>{ch.subject}</span>
                       <span
-                        className={`font-bold px-1.5 rounded ${
-                          st === 'published' ? 'bg-emerald-100 text-emerald-800' : st === 'draft' ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-600'
+                        className={`font-extrabold px-1.5 rounded ${
+                          st === 'published' ? 'bg-[#E7F7F1] text-[#0B7A67]' : st === 'draft' ? 'bg-[#FFF1D6] text-[#8A5A14]' : 'bg-slate-100 text-slate-600'
                         }`}
                       >
                         {st === 'published' ? 'Published' : st === 'draft' ? 'Draft' : 'No notes'}
@@ -289,7 +289,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ tree, notes, reloadN
                           {n.attachments.length}
                         </span>
                       ) : null}
-                      {hidden && <span className="font-bold text-slate-500">Hidden</span>}
+                      {hidden && <span className="font-extrabold text-slate-500">Hidden</span>}
                     </p>
                   </button>
                 </li>
@@ -310,7 +310,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ tree, notes, reloadN
           <Card className="p-5 sm:p-6 space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#3B4FE0]">
+                <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#3B4FE0]">
                   Class {parseInt(selected.class_sort, 10)} • {selected.subject} • {selected.chapter_id}
                 </p>
                 <h3 className="text-lg font-extrabold text-[#1E2233]">{selected.chapter_name}</h3>
@@ -318,7 +318,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ tree, notes, reloadN
                   {saved
                     ? `${published ? 'Published' : 'Draft'} • last saved ${new Date(saved.updated_at).toLocaleString()}${saved.updated_by ? ` by ${saved.updated_by}` : ''}`
                     : 'No notes yet'}
-                  {dirty && <span className="ml-1 font-bold text-amber-700">• Unsaved changes</span>}
+                  {dirty && <span className="ml-1 font-extrabold text-[#8A5A14]">• Unsaved changes</span>}
                 </p>
               </div>
               <button onClick={() => setPreviewOpen(true)} className={secondaryButton}>
@@ -327,7 +327,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ tree, notes, reloadN
             </div>
 
             <label className="block space-y-1">
-              <span className="text-xs font-bold text-[#1E2233]">Title (optional)</span>
+              <span className="text-xs font-extrabold text-[#1E2233]">Title (optional)</span>
               <input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -338,7 +338,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ tree, notes, reloadN
             </label>
 
             <label className="block space-y-1">
-              <span className="text-xs font-bold text-[#1E2233]">Summary</span>
+              <span className="text-xs font-extrabold text-[#1E2233]">Summary</span>
               <textarea
                 rows={4}
                 value={form.summary}
@@ -358,7 +358,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ tree, notes, reloadN
                 ] as const
               ).map(([field, label, hint]) => (
                 <label key={field} className="block space-y-1">
-                  <span className="text-xs font-bold text-[#1E2233]">{label}</span>
+                  <span className="text-xs font-extrabold text-[#1E2233]">{label}</span>
                   <textarea
                     rows={7}
                     value={form[field]}
@@ -375,7 +375,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ tree, notes, reloadN
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#1E2233] flex items-center gap-1.5">
+                <span className="text-xs font-extrabold text-[#1E2233] flex items-center gap-1.5">
                   <Paperclip className="w-3.5 h-3.5" /> Cheat sheets & files
                 </span>
                 <button onClick={() => fileInput.current?.click()} disabled={saving || uploads.length > 0} className={secondaryButton}>
@@ -391,15 +391,15 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ tree, notes, reloadN
                 />
               </div>
               {uploads.map((u) => (
-                <div key={u.name} className="p-3 rounded-xl border border-[#E3E5EC] space-y-1.5">
-                  <p className="text-xs font-semibold text-[#1E2233] truncate">Uploading {u.name}</p>
+                <div key={u.name} className="p-3 rounded-[14px] border-2 border-[#E3E5EC] space-y-1.5">
+                  <p className="text-xs font-bold text-[#1E2233] truncate">Uploading {u.name}</p>
                   <div className="h-1.5 bg-[#E3E5EC] rounded-full overflow-hidden">
                     <div className="h-full bg-[#3B4FE0] transition-all" style={{ width: `${u.pct}%` }} />
                   </div>
                 </div>
               ))}
               {form.attachments.length === 0 && uploads.length === 0 ? (
-                <p className="text-xs text-[#6B7280] p-3 border border-dashed border-[#E3E5EC] rounded-xl">
+                <p className="text-xs text-[#6B7280] p-3 border border-dashed border-[#E3E5EC] rounded-[14px]">
                   No files yet. PDF, PNG, JPG or WEBP up to 20 MB. Files are saved to the notes as soon as they upload.
                 </p>
               ) : (
@@ -412,7 +412,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ tree, notes, reloadN
                         onClick={() => removeAttachment(a)}
                         aria-label={`Remove ${a.name}`}
                         disabled={saving}
-                        className="p-1.5 text-[#6B7280] hover:text-rose-600 rounded-lg cursor-pointer"
+                        className="p-1.5 text-[#6B7280] hover:text-[#C24A2C] rounded-xl cursor-pointer"
                       >
                         <X className="w-4 h-4" />
                       </button>

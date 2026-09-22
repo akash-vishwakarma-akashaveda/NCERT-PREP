@@ -8,3 +8,5 @@ export { reminderJob, unsubscribe } from './reminders';
 export { submitFeedback } from './feedback';
 export { deleteAccount } from './account';
 export { askDoubt } from './doubts';
+export { trackVisit, countRegistration, countLessonProgress } from './stats';
+export { recordAdultConsent, requestParentalConsent, getParentalConsentRequest, decideParentalConsent, purgeUnconsentedChildren } from './consent';

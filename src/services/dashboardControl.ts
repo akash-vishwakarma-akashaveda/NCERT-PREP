@@ -26,9 +26,10 @@ export interface SpotlightLesson {
 
 export interface ContentAccessPolicy {
   freePreviewEnabled: boolean;
+  /** Visitors can play the first lesson of this many chapters per subject. */
   freePreviewCount: number;
+  /** Visitors can read published notes & cheat sheets of lessons they can preview. */
   allowGuestNotes: boolean;
-  allowGuestDoubts: boolean;
 }
 
 export interface StudentDashboardConfig {
@@ -40,53 +41,21 @@ export interface StudentDashboardConfig {
 const STORAGE_KEY = 'ncert_prep_student_dashboard_config';
 const CONFIG_DOC_PATH = 'settings/student_dashboard';
 
-const DEFAULT_CONFIG: StudentDashboardConfig = {
-  announcement: {
-    id: 'ann-default',
-    title: 'NCERT Board Revision Sprint 2026–27',
-    message: 'New high-yield chapter one-shots, formula cheat sheets, and PYQ video solutions are live across all grades.',
-    tone: 'exam',
-    targetClass: 'all',
-    actionLabel: 'Browse Syllabus',
-    actionUrl: '/app/subjects',
-    isActive: true,
-    createdAt: Date.now(),
-  },
-  spotlights: {
-    '10': {
-      classSort: '10',
-      videoId: 'd4b_B295xY8',
-      title: 'Chemical Reactions and Equations | Full Chapter One-Shot Revision',
-      subject: 'Science',
-      chapterName: 'Chemical Reactions and Equations',
-      note: 'Educator Spotlight: Master balancing equations and redox reactions before Friday.',
-      isActive: true,
-      updatedAt: Date.now(),
-    },
-    '12': {
-      classSort: '12',
-      videoId: 'phys12_ch1',
-      title: 'Electric Charges and Fields | Complete High-Yield Revision',
-      subject: 'Physics',
-      chapterName: 'Electric Charges and Fields',
-      note: 'Educator Spotlight: Core derivations for Gauss Law and Coulomb Law.',
-      isActive: true,
-      updatedAt: Date.now(),
-    },
-  },
-  policy: {
-    freePreviewEnabled: true,
-    freePreviewCount: 1,
-    allowGuestNotes: false,
-    allowGuestDoubts: false,
-  },
+// Every project starts empty: nothing is shown to students until an admin publishes it.
+const EMPTY_CONFIG: StudentDashboardConfig = {
+  announcement: null,
+  spotlights: {},
+  policy: { freePreviewEnabled: true, freePreviewCount: 1, allowGuestNotes: false },
 };
+
+const DEFAULT_CONFIG = EMPTY_CONFIG;
 
 function readLocalConfig(): StudentDashboardConfig {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+      const saved = JSON.parse(raw);
+      return { ...DEFAULT_CONFIG, ...saved, policy: { ...DEFAULT_CONFIG.policy, ...saved.policy } };
     }
   } catch (err) {
     console.warn('Could not read dashboard config from local storage', err);
@@ -110,7 +79,8 @@ export const DashboardControlService = {
     try {
       const snap = await getDoc(doc(db, CONFIG_DOC_PATH));
       if (snap.exists()) {
-        const data = snap.data() as StudentDashboardConfig;
+        const raw = snap.data() as StudentDashboardConfig;
+        const data = { ...EMPTY_CONFIG, ...raw, policy: { ...EMPTY_CONFIG.policy, ...raw.policy } };
         writeLocalConfig(data);
         return data;
       }
@@ -126,7 +96,8 @@ export const DashboardControlService = {
     try {
       await setDoc(doc(db, CONFIG_DOC_PATH), cfg, { merge: true });
     } catch (err) {
-      console.warn('Firestore sync skipped for dashboard config', err);
+      // Surface it: the admin must not see "saved" when students will never get the change.
+      throw new Error(`Could not publish to students: ${(err as Error).message || 'Firestore write failed'}`);
     }
   },
 

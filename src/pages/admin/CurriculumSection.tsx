@@ -72,17 +72,17 @@ const ItemRow: React.FC<{
   extra?: React.ReactNode;
 }> = ({ selected, title, meta, active, onSelect, onToggle, onEdit, extra }) => (
   <li
-    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-colors ${
+    className={`flex items-center gap-2 px-3 py-2.5 rounded-[14px] border transition-colors ${
       selected ? 'border-[#3B4FE0] bg-[#EEEDFE]/60' : 'border-transparent hover:bg-[#F5F6FA]'
     }`}
   >
     <button onClick={onSelect} disabled={!onSelect} className="flex-1 min-w-0 text-left cursor-pointer disabled:cursor-default">
-      <p className={`text-sm font-semibold truncate ${active ? 'text-[#1E2233]' : 'text-[#6B7280] line-through'}`}>{title}</p>
+      <p className={`text-sm font-bold truncate ${active ? 'text-[#1E2233]' : 'text-[#6B7280] line-through'}`}>{title}</p>
       <p className="text-[11px] text-[#6B7280] truncate">{meta}</p>
     </button>
     {extra}
     <Toggle checked={active} onChange={onToggle} label={`${active ? 'Hide' : 'Show'} ${title}`} />
-    <button onClick={onEdit} aria-label={`Edit ${title}`} className="p-1.5 text-[#6B7280] hover:text-[#3B4FE0] rounded-lg cursor-pointer">
+    <button onClick={onEdit} aria-label={`Edit ${title}`} className="p-1.5 text-[#6B7280] hover:text-[#3B4FE0] rounded-xl cursor-pointer">
       <Pencil className="w-3.5 h-3.5" />
     </button>
   </li>
@@ -166,8 +166,8 @@ export const CurriculumSection: React.FC<CurriculumSectionProps> = ({ tree, note
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
           <Card className="p-3 space-y-2">
             <div className="flex items-center justify-between px-1">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B7280]">Classes</h3>
-              <button onClick={() => setEditing({ kind: 'class' })} className="text-xs font-bold text-[#3B4FE0] flex items-center gap-1 cursor-pointer">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#6B7280]">Classes</h3>
+              <button onClick={() => setEditing({ kind: 'class' })} className="text-xs font-extrabold text-[#3B4FE0] flex items-center gap-1 cursor-pointer">
                 <Plus className="w-3.5 h-3.5" /> Add
               </button>
             </div>
@@ -191,11 +191,11 @@ export const CurriculumSection: React.FC<CurriculumSectionProps> = ({ tree, note
 
           <Card className="p-3 space-y-2">
             <div className="flex items-center justify-between px-1">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B7280]">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#6B7280]">
                 Subjects {selectedClass && `• ${selectedClass.name}`}
               </h3>
               {selectedClass && (
-                <button onClick={() => setEditing({ kind: 'subject' })} className="text-xs font-bold text-[#3B4FE0] flex items-center gap-1 cursor-pointer">
+                <button onClick={() => setEditing({ kind: 'subject' })} className="text-xs font-extrabold text-[#3B4FE0] flex items-center gap-1 cursor-pointer">
                   <Plus className="w-3.5 h-3.5" /> Add
                 </button>
               )}
@@ -224,11 +224,11 @@ export const CurriculumSection: React.FC<CurriculumSectionProps> = ({ tree, note
 
           <Card className="p-3 space-y-2">
             <div className="flex items-center justify-between px-1">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#6B7280]">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#6B7280]">
                 Chapters {selectedSubject && `• ${selectedSubject.name}`}
               </h3>
               {selectedSubject && (
-                <button onClick={() => setEditing({ kind: 'chapter' })} className="text-xs font-bold text-[#3B4FE0] flex items-center gap-1 cursor-pointer">
+                <button onClick={() => setEditing({ kind: 'chapter' })} className="text-xs font-extrabold text-[#3B4FE0] flex items-center gap-1 cursor-pointer">
                   <Plus className="w-3.5 h-3.5" /> Add
                 </button>
               )}
@@ -255,7 +255,7 @@ export const CurriculumSection: React.FC<CurriculumSectionProps> = ({ tree, note
                           onClick={() => onEditNotes(ch.key)}
                           aria-label={`Notes for ${ch.chapter_name}`}
                           title="Edit notes & cheat sheet"
-                          className={`p-1.5 rounded-lg cursor-pointer ${n?.isPublished ? 'text-[#12A594]' : 'text-[#6B7280] hover:text-[#3B4FE0]'}`}
+                          className={`p-1.5 rounded-xl cursor-pointer ${n?.isPublished ? 'text-[#12A594]' : 'text-[#6B7280] hover:text-[#3B4FE0]'}`}
                         >
                           <FileText className="w-3.5 h-3.5" />
                         </button>
@@ -380,12 +380,14 @@ const EditDialog: React.FC<{
     if (!subject) return setError('Select a subject first.');
     const cid = isNew ? chapterId.trim() : (node as AdminChapterNode).chapter_id;
     if (!cid || !name.trim()) return setError('Chapter ID and chapter name are required.');
-    const id = chapterKey(subject.class_sort, subject.name, cid);
+    const book = isNew ? subject.textbook : (node as AdminChapterNode).textbook || '';
+    const id = chapterKey(subject.class_sort, subject.name, cid, book);
     if (isNew && subject.chapters.some((c) => c.key === id)) return setError('That chapter ID already exists in this subject.');
     const record: CurriculumChapter = {
       id,
       class_sort: subject.class_sort,
       subject: subject.name,
+      ...(book ? { textbook: book } : {}),
       chapter_id: cid,
       chapter_name: name.trim(),
       order: Number(order) || 10,
@@ -409,11 +411,11 @@ const EditDialog: React.FC<{
   return (
     <Modal title={title.charAt(0).toUpperCase() + title.slice(1)} subtitle={subtitle} onClose={onClose}>
       <form onSubmit={submit} className="space-y-4">
-        {error && <p className="p-3 text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-xl">{error}</p>}
+        {error && <p className="p-3 text-xs text-[#8A2E17] bg-[#FFE9E2] border border-[#FFC3B1] rounded-[14px]">{error}</p>}
 
         {editing.kind === 'class' && isNew && (
           <label className="block space-y-1">
-            <span className="text-xs font-bold text-[#1E2233]">Class number</span>
+            <span className="text-xs font-extrabold text-[#1E2233]">Class number</span>
             <select value={classNumber} onChange={(e) => setClassNumber(e.target.value)} className={inputClass}>
               {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map((c) => (
                 <option key={c} value={c} disabled={used.has(c)}>
@@ -426,7 +428,7 @@ const EditDialog: React.FC<{
 
         {editing.kind === 'chapter' && (
           <label className="block space-y-1">
-            <span className="text-xs font-bold text-[#1E2233]">Chapter ID</span>
+            <span className="text-xs font-extrabold text-[#1E2233]">Chapter ID</span>
             <input
               value={chapterId}
               onChange={(e) => setChapterId(e.target.value)}
@@ -439,7 +441,7 @@ const EditDialog: React.FC<{
         )}
 
         <label className="block space-y-1">
-          <span className="text-xs font-bold text-[#1E2233]">
+          <span className="text-xs font-extrabold text-[#1E2233]">
             {editing.kind === 'class' ? 'Display name' : editing.kind === 'subject' ? 'Subject name' : 'Chapter name'}
           </span>
           <input
@@ -458,18 +460,18 @@ const EditDialog: React.FC<{
 
         {editing.kind === 'subject' && (
           <label className="block space-y-1">
-            <span className="text-xs font-bold text-[#1E2233]">Textbook</span>
+            <span className="text-xs font-extrabold text-[#1E2233]">Textbook</span>
             <input value={textbook} onChange={(e) => setTextbook(e.target.value)} placeholder="e.g. NCERT Science (Class X)" className={inputClass} />
           </label>
         )}
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-1">
-            <span className="text-xs font-bold text-[#1E2233]">Display order</span>
+            <span className="text-xs font-extrabold text-[#1E2233]">Display order</span>
             <input type="number" min={0} value={order} onChange={(e) => setOrder(Number(e.target.value))} className={inputClass} />
           </label>
           <div className="space-y-1">
-            <span className="text-xs font-bold text-[#1E2233] block">Visible to students</span>
+            <span className="text-xs font-extrabold text-[#1E2233] block">Visible to students</span>
             <div className="pt-2">
               <Toggle checked={active} onChange={setActive} label="Visible to students" />
             </div>

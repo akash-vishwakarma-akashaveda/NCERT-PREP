@@ -27,8 +27,7 @@ import {
   DoubtStatus,
   NoteAttachment,
 } from '../types';
-import { CHAPTER_NOTES_DATA } from '../data/chapterNotes';
-import { chapterKey } from '../data/curriculumKeys';
+import { bumpDemoStat } from './stats';
 
 const live = () => Boolean(isFirebaseConfigured && db);
 
@@ -43,7 +42,7 @@ const LOCAL_KEYS = {
   classes: 'quickprep_classes',
   subjects: 'quickprep_subjects',
   chapters: 'quickprep_chapters',
-  notes: 'quickprep_notes',
+  notes: 'quickprep_notes_v2',
   doubts: 'quickprep_doubts',
 };
 
@@ -65,36 +64,7 @@ function writeLocal<T>(key: string, value: T) {
   window.dispatchEvent(new CustomEvent('quickprep-local-change', { detail: key }));
 }
 
-function demoNotesSeed(): Record<string, ChapterNotes> {
-  const seeded: Record<string, ChapterNotes> = {};
-  Object.values(CHAPTER_NOTES_DATA).forEach((legacy) => {
-    const id = chapterKey('10', legacy.subject, legacy.chapter_id);
-    seeded[id] = {
-      id,
-      class_sort: '10',
-      subject: legacy.subject,
-      chapter_id: legacy.chapter_id,
-      chapter_name: '',
-      title: '',
-      summary: legacy.summary,
-      key_points: legacy.key_formulas_or_points,
-      formulas: [],
-      exam_tips: legacy.exam_tips,
-      attachments: [],
-      isPublished: true,
-      updated_at: Date.now(),
-      updated_by: 'seed',
-    };
-  });
-  return seeded;
-}
-
 function localNotes(): Record<string, ChapterNotes> {
-  if (localStorage.getItem(LOCAL_KEYS.notes) === null) {
-    const seeded = demoNotesSeed();
-    writeLocal(LOCAL_KEYS.notes, seeded);
-    return seeded;
-  }
   return readLocal<Record<string, ChapterNotes>>(LOCAL_KEYS.notes, {});
 }
 
@@ -445,6 +415,7 @@ export const DoubtsService = {
       throw new Error('You can ask at most 10 doubts per day. Please try again tomorrow.');
     }
     const now = Date.now();
+    bumpDemoStat('doubtsAsked');
     all.push({
       id: `doubt-${now}-${Math.random().toString(36).slice(2, 7)}`,
       ...asker,

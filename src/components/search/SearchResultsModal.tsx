@@ -46,93 +46,110 @@ export const SearchResultsModal: React.FC<SearchResultsModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Students search only their own class, so the class badge is noise unless results span several classes.
+  const multiClass = new Set(videos.map((v) => v.class_sort)).size > 1;
+  const pick = (video: Video) => {
+    onSelectVideo(video);
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-[#1E2233]/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-[#E3E5EC] overflow-hidden">
-        {/* Search Input Bar */}
-        <div className="flex items-center px-4 border-b border-[#E3E5EC]">
-          <Search className="w-5 h-5 text-[#3B4FE0] shrink-0 ml-1" />
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-[#1E2233]/60 backdrop-blur-xs animate-in fade-in duration-150"
+      onMouseDown={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search lessons"
+        onMouseDown={(e) => e.stopPropagation()}
+        className="relative w-full max-w-2xl bg-white rounded-[24px] border-[3px] border-[color:var(--card-line)] shadow-[0_6px_0_var(--card-line),0_24px_60px_rgba(30,34,51,0.25)] overflow-hidden"
+      >
+        <div className="flex items-center gap-2 px-4 border-b-[3px] border-[color:var(--card-line)] focus-within:border-[color:var(--brand)] transition-colors">
+          <Search className="w-5 h-5 text-[color:var(--brand)] shrink-0" strokeWidth={2.6} />
           <input
             ref={inputRef}
-            type="text"
-            placeholder="Search by topic, chapter (e.g. Life Processes), or subject..."
+            type="search"
+            aria-label="Search lessons, chapters or subjects"
+            placeholder="Search a lesson or chapter…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full px-4 py-4 text-base text-[#1E2233] bg-transparent outline-none placeholder:text-[#6B7280]"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && results[0]) pick(results[0].item);
+            }}
+            className="flex-1 min-w-0 px-1 py-4 text-base font-semibold text-[#1E2233] bg-transparent outline-none placeholder:text-[#9AA1B4] [&::-webkit-search-cancel-button]:hidden"
           />
           {query && (
             <button
-              onClick={() => setQuery('')}
-              className="p-1 text-[#6B7280] hover:text-[#1E2233] rounded-md mr-1 cursor-pointer"
+              onClick={() => {
+                setQuery('');
+                inputRef.current?.focus();
+              }}
+              aria-label="Clear search"
+              className="p-1.5 text-[#9AA1B4] hover:text-[#1E2233] rounded-full cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           )}
           <button
             onClick={onClose}
-            className="px-2 py-1 text-xs font-medium text-[#6B7280] hover:bg-[#F5F6FA] rounded-md cursor-pointer border border-[#E3E5EC]"
+            aria-label="Close search"
+            className="shrink-0 h-8 min-w-8 px-2 flex items-center justify-center text-[11px] font-extrabold text-[#6B7280] bg-[color:var(--page)] hover:text-[#1E2233] rounded-[10px] border-2 border-[color:var(--card-line)] cursor-pointer"
           >
-            ESC
+            <span className="hidden sm:inline">ESC</span>
+            <X className="w-4 h-4 sm:hidden" />
           </button>
         </div>
 
-        {/* Results List or Empty States */}
         <div className="max-h-[60vh] overflow-y-auto p-2">
           {!isSearching && (
-            <div className="p-8 text-center text-[#6B7280]">
-              <Sparkles className="w-8 h-8 text-[#3B4FE0]/40 mx-auto mb-2" />
-              <p className="text-sm font-medium text-[#1E2233]">Global Curriculum Search</p>
-              <p className="text-xs mt-1">
-                Type 2 or more letters to search across video titles, NCERT chapters, and subjects.
-              </p>
+            <div className="px-6 py-10 text-center">
+              <span className="mx-auto mb-3 w-12 h-12 rounded-[16px] bg-[color:var(--brand-soft)] text-[color:var(--brand)] flex items-center justify-center">
+                <Sparkles className="w-6 h-6" />
+              </span>
+              <p className="font-display text-lg text-[#1E2233]">Find a lesson</p>
+              <p className="mt-1 text-sm font-semibold text-[#6B7280]">Type at least 2 letters to search lesson titles, chapters and subjects.</p>
             </div>
           )}
 
           {isSearching && results.length === 0 && (
-            <div className="p-8 text-center text-[#6B7280]">
-              <Book className="w-8 h-8 text-[#6B7280]/40 mx-auto mb-2" />
-              <p className="text-sm font-medium text-[#1E2233]">No matching revision topics found</p>
-              <p className="text-xs mt-1">
-                Try searching for keywords like &quot;Chemical&quot;, &quot;Electricity&quot;, or &quot;Trigonometry&quot;.
-              </p>
+            <div className="px-6 py-10 text-center">
+              <span className="mx-auto mb-3 w-12 h-12 rounded-[16px] bg-[#F1F3FB] text-[#9AA1B4] flex items-center justify-center">
+                <Book className="w-6 h-6" />
+              </span>
+              <p className="font-display text-lg text-[#1E2233]">No lessons match &ldquo;{query.trim()}&rdquo;</p>
+              <p className="mt-1 text-sm font-semibold text-[#6B7280]">Check the spelling, or try a chapter or subject name.</p>
             </div>
           )}
 
           {isSearching && results.length > 0 && (
             <div className="space-y-1">
-              <div className="px-3 py-1.5 text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">
-                {results.length} ranked matches
-              </div>
+              <p className="px-3 pt-1.5 pb-1 text-[11px] font-extrabold tracking-[0.08em] text-[#9AA1B4]">
+                {results.length} {results.length === 1 ? 'LESSON' : 'LESSONS'} · PRESS ENTER TO OPEN THE FIRST
+              </p>
               {results.map(({ item: video }) => {
                 const style = getClassTileStyle(video.class_sort);
                 return (
                   <button
                     key={video.youtube_id}
-                    onClick={() => {
-                      onSelectVideo(video);
-                      onClose();
-                    }}
-                    className="w-full text-left p-3 rounded-xl hover:bg-[#F5F6FA] border border-transparent hover:border-[#E3E5EC] transition-all flex items-start gap-3 cursor-pointer group"
+                    onClick={() => pick(video)}
+                    className="w-full text-left p-3 rounded-[16px] border-2 border-transparent hover:bg-[color:var(--brand-soft)] hover:border-[color:var(--brand-line)] focus-visible:bg-[color:var(--brand-soft)] transition-colors flex items-center gap-3 cursor-pointer group"
                   >
-                    <div
-                      className="shrink-0 px-2 py-1 rounded-lg text-xs font-semibold"
-                      style={{ backgroundColor: style.bg, color: style.text }}
-                    >
-                      {video.class_display}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#1E2233] group-hover:text-[#3B4FE0] line-clamp-1">
-                        {video.video_title}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-[#6B7280]">
-                        <span className="font-medium text-[#12A594]">{video.subject}</span>
-                        <span>•</span>
-                        <span className="truncate">{video.chapter_name}</span>
-                      </div>
-                    </div>
-
-                    <VideoIcon className="w-4 h-4 text-[#6B7280] group-hover:text-[#3B4FE0] shrink-0 self-center" />
+                    {multiClass ? (
+                      <span className="shrink-0 px-2 py-1 rounded-xl text-xs font-extrabold" style={{ backgroundColor: style.bg, color: style.text }}>
+                        {video.class_display}
+                      </span>
+                    ) : (
+                      <span className="shrink-0 w-9 h-9 rounded-[12px] bg-[color:var(--brand-soft)] text-[color:var(--brand)] flex items-center justify-center group-hover:bg-white">
+                        <VideoIcon className="w-4 h-4" />
+                      </span>
+                    )}
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm font-extrabold text-[#1E2233] group-hover:text-[color:var(--brand)] truncate">{video.video_title}</span>
+                      <span className="block mt-0.5 text-xs font-semibold text-[#6B7280] truncate">
+                        <span className="text-[#0C8F78]">{video.subject}</span> · {video.chapter_name}
+                      </span>
+                    </span>
                   </button>
                 );
               })}

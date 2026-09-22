@@ -13,11 +13,14 @@ import { RevisionNotesModal } from './components/app/RevisionNotesModal';
 import { LandingPage } from './pages/LandingPage';
 import { BrowsePage } from './pages/BrowsePage';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { ParentConsentPage } from './pages/ParentConsentPage';
 import { StudentLayout } from './student/StudentLayout';
 import { HomePage } from './student/pages/HomePage';
 import { SubjectDetailPage, SubjectsPage } from './student/pages/SubjectsPage';
 import { LessonPage } from './student/pages/LessonPage';
 import { DoubtsPage, FocusPage, ProfilePage, RemindersPage, SavedPage } from './student/pages/AccountPages';
+import { LeaderboardPage } from './student/pages/LeaderboardPage';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 type PublicTab = 'home' | 'browse' | 'profile' | 'privacy';
 const PUBLIC_PATHS: Partial<Record<PublicTab, string>> = { home: '/', browse: '/browse', privacy: '/privacy', profile: '/app' };
@@ -31,7 +34,8 @@ const PublicLayout: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
 
   // Signed-in users live in /app; privacy and syllabus browser stay readable for all.
-  if (!loading && user && pathname !== '/privacy' && pathname !== '/browse') {
+  // /parent-consent stays open: a parent signs in there to approve their child's account.
+  if (!loading && user && pathname !== '/privacy' && pathname !== '/browse' && pathname !== '/parent-consent') {
     const lesson = pathname.match(/^\/watch\/(.+)$/);
     return <Navigate to={lesson ? `/app/lesson/${lesson[1]}` : '/app'} replace />;
   }
@@ -39,14 +43,15 @@ const PublicLayout: React.FC = () => {
   const go = (tab: PublicTab) => navigate(PUBLIC_PATHS[tab] || '/');
 
   return (
-    <div className={`min-h-screen flex flex-col text-[#1E2233] ${pathname === '/' ? 'page-glow' : 'bg-[#F5F6FA]'}`}>
+    <div className="min-h-screen flex flex-col text-[#1E2233] bg-[#F5F6FA]">
       <Navbar
         currentTab={pathname === '/browse' ? 'browse' : 'home'}
         onNavigate={go}
         onOpenSearch={() => setSearchOpen(true)}
         showSearch={pathname !== '/'}
       />
-      <main className="flex-1 w-full min-w-0 px-4 sm:px-6 lg:px-10 pt-6">
+      {/* The landing page draws its own full-width bands; other public pages sit in the site column. */}
+      <main className={pathname === '/' ? 'flex-1 w-full min-w-0' : 'flex-1 w-full min-w-0 max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-6'}>
         <Outlet context={{ openSearch: () => setSearchOpen(true) }} />
       </main>
       <Footer onNavigate={go} />
@@ -64,13 +69,14 @@ const PublicLayout: React.FC = () => {
 };
 
 const LandingRoute: React.FC = () => {
-  const { classes, allVideos } = useCatalogContext();
+  const { classes, allVideos, loading } = useCatalogContext();
   const { setAuthModalOpen } = useAuth();
   const navigate = useNavigate();
   return (
     <LandingPage
       classes={classes}
       allVideos={allVideos}
+      catalogLoading={loading}
       onExploreCurriculum={() => navigate('/browse')}
       onSelectVideo={(v) => navigate(`/watch/${encodeURIComponent(v.youtube_id)}`)}
       onSelectClass={(classSort) => navigate(`/browse?class=${classSort}`)}
@@ -114,16 +120,18 @@ const PrivacyRoute: React.FC = () => {
 };
 
 export const App: React.FC = () => (
+  <ErrorBoundary>
   <BrowserRouter>
     <AuthProvider>
-      <ProgressProvider>
-        <DoubtsProvider>
-          <CatalogProvider>
+      <CatalogProvider>
+        <ProgressProvider>
+          <DoubtsProvider>
             <Routes>
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<LandingRoute />} />
                 <Route path="/browse" element={<BrowseRoute />} />
                 <Route path="/privacy" element={<PrivacyRoute />} />
+                <Route path="/parent-consent" element={<ParentConsentPage />} />
                 <Route path="/watch/:videoId" element={<LessonPage publicMode />} />
               </Route>
 
@@ -132,6 +140,7 @@ export const App: React.FC = () => (
                 <Route path="subjects" element={<SubjectsPage />} />
                 <Route path="subjects/:subject" element={<SubjectDetailPage />} />
                 <Route path="lesson/:videoId" element={<LessonPage />} />
+                <Route path="leaderboard" element={<LeaderboardPage />} />
                 <Route path="doubts" element={<DoubtsPage />} />
                 <Route path="saved" element={<SavedPage />} />
                 <Route path="focus" element={<FocusPage />} />
@@ -143,11 +152,12 @@ export const App: React.FC = () => (
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <AuthPages isModal />
-          </CatalogProvider>
-        </DoubtsProvider>
-      </ProgressProvider>
+          </DoubtsProvider>
+        </ProgressProvider>
+      </CatalogProvider>
     </AuthProvider>
   </BrowserRouter>
+  </ErrorBoundary>
 );
 
 export default App;

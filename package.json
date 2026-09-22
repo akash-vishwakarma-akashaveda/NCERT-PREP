@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "node --test test/app.test.mjs"
+    "test": "node --test test/app.test.mjs test/sync.test.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

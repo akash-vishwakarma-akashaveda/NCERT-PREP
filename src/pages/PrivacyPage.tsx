@@ -1,116 +1,78 @@
-import React from 'react';
-import { Shield, Lock, Eye, Trash2, Mail, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Shield } from 'lucide-react';
 import { Breadcrumbs } from '../components/navigation/Breadcrumbs';
+import { NoticeView } from '../components/consent/ConsentGate';
+import { GRIEVANCE, NOTICE_VERSION, NoticeLang } from '../data/privacyNotice';
 
 interface PrivacyPageProps {
   onNavigateHome: () => void;
 }
 
+const MORE: [string, string][] = [
+  [
+    'How consent works',
+    'We ask for consent right after you sign in, before using any other data. Adults consent themselves. For anyone under 18 we email the parent or guardian they name; that adult must sign in with that email, confirm they are the parent or lawful guardian and 18+, and approve. Until then the account cannot be used. If nobody approves within 30 days, the account is deleted.',
+  ],
+  [
+    'Sign-in',
+    'You can sign in with Google or with an email address and password (Firebase Authentication). We never see your Google password. Email accounts must verify their address.',
+  ],
+  [
+    'Children',
+    'We do not track children, profile their behaviour or show them advertising. A child’s browser is never linked to their account in our visitor counts.',
+  ],
+  [
+    'Videos',
+    'Lessons play from YouTube’s privacy-enhanced domain (youtube-nocookie.com) without recommendations. We never access your YouTube account.',
+  ],
+  ['Reminder emails', 'Off unless you turn them on. Every email has a one-click unsubscribe link.'],
+  [
+    'Storage and security',
+    'Data is stored in Google Firebase (Firestore) with access rules so that only you, and our teachers for your doubts, can see your data. We keep it until you withdraw consent or delete your account; it is then erased within 30 days.',
+  ],
+  ['Changes', 'If this notice changes in a way that needs your consent again, we will ask you the next time you sign in.'],
+];
+
 export const PrivacyPage: React.FC<PrivacyPageProps> = ({ onNavigateHome }) => {
+  const [lang, setLang] = useState<NoticeLang>('en');
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-16">
+    <div className="max-w-3xl mx-auto space-y-6 pb-16">
       <Breadcrumbs
         items={[
           { label: 'Home', onClick: onNavigateHome },
-          { label: 'Privacy Policy', active: true },
+          { label: 'Privacy', active: true },
         ]}
       />
 
-      {/* Header */}
-      <div className="bg-white border border-[#E3E5EC] rounded-2xl p-6 sm:p-8 shadow-2xs space-y-3">
-        <div className="w-12 h-12 rounded-xl bg-[#3B4FE0]/10 text-[#3B4FE0] flex items-center justify-center">
+      <div className="bg-white border-[3px] border-[#EDEFF6] rounded-[26px] p-6 sm:p-8 space-y-3">
+        <span className="w-12 h-12 rounded-[16px] bg-[#3B4FE0] shadow-[0_4px_0_#2A3BB8] text-white flex items-center justify-center">
           <Shield className="w-6 h-6" />
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1E2233]">
-          Privacy Policy & Data Protection
-        </h1>
-        <p className="text-xs text-[#6B7280]">
-          Last updated: 17 September 2026 • Compliant with India Digital Personal Data Protection (DPDP) Act, 2023 & NFR-11
+        </span>
+        <h1 className="text-[28px] sm:text-[32px] leading-tight text-[#1E2233]">Privacy notice</h1>
+        <p className="text-xs font-bold text-[#6B7280]">
+          Notice version {NOTICE_VERSION} · Digital Personal Data Protection Act, 2023 · Available in English and हिन्दी
         </p>
       </div>
 
-      {/* DPDP Core Disclosures */}
-      <div className="bg-white border border-[#E3E5EC] rounded-2xl p-6 sm:p-8 shadow-2xs space-y-6 text-sm text-[#1E2233] leading-relaxed">
-        <section className="space-y-2">
-          <h2 className="text-lg font-semibold text-[#1E2233] flex items-center gap-2">
-            <Eye className="w-5 h-5 text-[#3B4FE0]" />
-            1. What Information We Collect & Why
-          </h2>
-          <p className="text-xs sm:text-sm text-[#6B7280]">
-            NCERT Prep collects only the minimal data strictly necessary to provide structured revision:
-          </p>
-          <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm text-[#6B7280]">
-            <li>
-              <strong>Account Identifier:</strong> Your Google email address or mobile phone number (via Firebase Auth) to maintain your personalized session.
-            </li>
-            <li>
-              <strong>Watch Progress & Favourites:</strong> Records of which educational chapters you completed or marked as favourites, stored under your user profile.
-            </li>
-            <li>
-              <strong>Reminder Preferences:</strong> Whether you opted in to revision reminders and your chosen frequency (daily or weekly).
-            </li>
-            <li>
-              <strong>Private Feedback:</strong> Voluntary notes submitted to the educator regarding specific lessons.
-            </li>
-          </ul>
-        </section>
+      <div className="bg-white border-[3px] border-[#EDEFF6] rounded-[26px] p-5 sm:p-6">
+        <NoticeView lang={lang} onLang={setLang} />
+      </div>
 
-        <section className="space-y-2 pt-4 border-t border-[#E3E5EC]">
-          <h2 className="text-lg font-semibold text-[#1E2233] flex items-center gap-2">
-            <Lock className="w-5 h-5 text-[#12A594]" />
-            2. Video Playback & No YouTube Tracking
-          </h2>
-          <p className="text-xs sm:text-sm text-[#6B7280]">
-            Videos are embedded using YouTube&apos;s privacy-enhanced domain (<code>youtube-nocookie.com</code>) with controls configured to prevent related-video clutter. We never access your personal YouTube account, browsing history, or private credentials.
-          </p>
-        </section>
-
-        <section className="space-y-2 pt-4 border-t border-[#E3E5EC]">
-          <h2 className="text-lg font-semibold text-[#1E2233] flex items-center gap-2">
-            <Mail className="w-5 h-5 text-[#3B4FE0]" />
-            3. Revision Reminders & Anti-Spam
-          </h2>
-          <p className="text-xs sm:text-sm text-[#6B7280]">
-            Revision emails are strictly opt-in. Every reminder email contains an explicit <strong>one-click unsubscribe link</strong> that immediately turns off reminder delivery without requiring manual password entry.
-          </p>
-        </section>
-
-        <section className="space-y-2 pt-4 border-t border-[#E3E5EC]">
-          <h2 className="text-lg font-semibold text-[#1E2233] flex items-center gap-2">
-            <Trash2 className="w-5 h-5 text-rose-600" />
-            4. Self-Service Account & Data Deletion
-          </h2>
-          <p className="text-xs sm:text-sm text-[#6B7280]">
-            Under the DPDP Act (2023), you have the absolute right to erasure. NCERT Prep provides a self-service account deletion mechanism directly in your <strong>Profile & Settings</strong> screen. Clicking &quot;Delete Account&quot; permanently and instantaneously purges:
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-            <div className="p-3 bg-[#F5F6FA] rounded-xl border border-[#E3E5EC] flex items-center gap-2 text-xs">
-              <CheckCircle2 className="w-4 h-4 text-[#12A594]" />
-              <span>Firebase Auth credentials</span>
-            </div>
-            <div className="p-3 bg-[#F5F6FA] rounded-xl border border-[#E3E5EC] flex items-center gap-2 text-xs">
-              <CheckCircle2 className="w-4 h-4 text-[#12A594]" />
-              <span>User profile in Firestore</span>
-            </div>
-            <div className="p-3 bg-[#F5F6FA] rounded-xl border border-[#E3E5EC] flex items-center gap-2 text-xs">
-              <CheckCircle2 className="w-4 h-4 text-[#12A594]" />
-              <span>All user_progress watch records</span>
-            </div>
-            <div className="p-3 bg-[#F5F6FA] rounded-xl border border-[#E3E5EC] flex items-center gap-2 text-xs">
-              <CheckCircle2 className="w-4 h-4 text-[#12A594]" />
-              <span>Email reminder subscriptions</span>
-            </div>
-          </div>
-        </section>
-
-        <section className="space-y-2 pt-4 border-t border-[#E3E5EC]">
-          <h2 className="text-base font-semibold text-[#1E2233]">
-            5. Grievance Officer & Contact Channel
-          </h2>
-          <p className="text-xs text-[#6B7280]">
-            For privacy inquiries, data modification requests, or questions regarding this notice:
-            <br />
-            <strong>Privacy & Grievance Contact:</strong> <code>privacy@ncertprep.io</code>
+      <div className="bg-white border-[3px] border-[#EDEFF6] rounded-[26px] p-5 sm:p-6 space-y-4">
+        {MORE.map(([title, body]) => (
+          <section key={title} className="space-y-1">
+            <h2 className="text-lg text-[#1E2233]">{title}</h2>
+            <p className="text-[13px] font-semibold leading-relaxed text-[#4B5168]">{body}</p>
+          </section>
+        ))}
+        <section className="space-y-1 pt-3 border-t-2 border-[#EDEFF6]">
+          <h2 className="text-lg text-[#1E2233]">Grievance Officer</h2>
+          <p className="text-[13px] font-semibold text-[#4B5168]">
+            {GRIEVANCE.name} ·{' '}
+            <a href={`mailto:${GRIEVANCE.email}`} className="font-extrabold text-[#3B4FE0]">
+              {GRIEVANCE.email}
+            </a>{' '}
+            · reply within 30 days. You can also complain to the Data Protection Board of India.
           </p>
         </section>
       </div>

@@ -4,6 +4,7 @@ import { defineSecret, defineString } from 'firebase-functions/params';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Resend } from 'resend';
 import { classSortOf, pickNextVideo, VideoData } from './catalog';
+import { getPlatformConfig } from './platform';
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -11,11 +12,11 @@ if (admin.apps.length === 0) {
 
 const db = admin.firestore();
 
-const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
+export const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
 const UNSUBSCRIBE_SECRET = defineSecret('UNSUBSCRIBE_SECRET');
-const APP_URL = defineString('APP_URL', { default: 'https://ncertprep.vercel.app' });
+export const APP_URL = defineString('APP_URL', { default: 'https://ncertprep.vercel.app' });
 // Must be an address on the domain verified with SPF/DKIM/DMARC in Resend (NFR-6).
-const EMAIL_FROM = defineString('EMAIL_FROM', { default: 'NCERT QuickPrep <revision@example.com>' });
+export const EMAIL_FROM = defineString('EMAIL_FROM', { default: 'NCERT Prep <revision@example.com>' });
 const REGION = 'us-central1';
 const RESEND_BATCH_SIZE = 100;
 
@@ -117,8 +118,9 @@ async function processReminders(frequency: 'daily' | 'weekly', istHour: number) 
     .where('reminder_frequency', '==', frequency)
     .get();
 
+  // DPDP: only accounts with recorded consent (a parent's, for under-18s) get emails.
   const dueDocs = usersSnapshot.docs.filter(
-    (doc) => (doc.get('reminder_hour') ?? DEFAULT_HOUR[frequency]) === istHour
+    (doc) => doc.get('consent.status') === 'granted' && (doc.get('reminder_hour') ?? DEFAULT_HOUR[frequency]) === istHour
   );
   if (dueDocs.length === 0) {
     functions.logger.info(`No ${frequency} reminders due at ${istHour}:00 IST.`);
@@ -189,6 +191,10 @@ export const reminderJob = functions
   .pubsub.schedule('0 * * * *')
   .timeZone('Asia/Kolkata')
   .onRun(async () => {
+    if (!(await getPlatformConfig()).features.reminderEmails) {
+      functions.logger.info('Reminder emails are switched off in Platform settings.');
+      return;
+    }
     const { hour, isSunday } = istNow();
     await processReminders('daily', hour);
     if (isSunday) await processReminders('weekly', hour);

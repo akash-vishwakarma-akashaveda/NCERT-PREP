@@ -46,21 +46,21 @@ export const ReminderSettingsCard: React.FC = () => {
   };
 
   return (
-    <section id="reminders" aria-labelledby="reminders-title" className="bg-white border border-[#E5E7EB] rounded-xl p-6 space-y-5 scroll-mt-24">
+    <section id="reminders" aria-labelledby="reminders-title" className="bg-white border-[3px] border-[color:var(--card-line)] rounded-[26px] p-5 sm:p-6 space-y-5 scroll-mt-24">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <span
-            className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-              enabled ? 'bg-[#E1F5EE] text-[#12A594]' : 'bg-[#F5F6FA] text-[#6B7280]'
+            className={`w-11 h-11 rounded-[15px] flex items-center justify-center shrink-0 ${
+              enabled ? 'bg-[#12A594] text-white shadow-[0_4px_0_#0B7A67]' : 'bg-[#F1F3FB] text-[#6B7280]'
             }`}
           >
             {enabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
           </span>
           <div>
-            <h2 id="reminders-title" className="text-lg font-semibold text-[#1E2233]">
+            <h2 id="reminders-title" className="text-lg text-[#1E2233]">
               Revision reminders
             </h2>
-            <p className="text-sm text-[#6B7280]">
+            <p className="text-sm font-semibold text-[#6B7280]">
               {enabled
                 ? `On · ${reminderSummary(true, user.reminder_frequency, user.reminder_hour)} IST to ${user.email || 'your email'}`
                 : 'Off · turn on to get an email suggesting your next lesson'}
@@ -75,38 +75,38 @@ export const ReminderSettingsCard: React.FC = () => {
           aria-label="Email revision reminders"
           disabled={saving || noEmail}
           onClick={() => save({ reminders_enabled: !enabled }, enabled ? 'Reminders turned off.' : 'Reminders turned on.')}
-          className={`relative inline-flex h-7 w-12 shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-            enabled ? 'bg-[#12A594]' : 'bg-[#CBD5E1]'
+          className={`relative inline-flex h-[27px] w-12 shrink-0 rounded-full p-[3px] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+            enabled ? 'bg-[color:var(--brand)]' : 'bg-[#D7DCEF]'
           }`}
         >
           <span
-            className={`pointer-events-none inline-block h-6 w-6 rounded-full bg-white shadow transition-transform ${
-              enabled ? 'translate-x-5' : 'translate-x-0'
+            className={`pointer-events-none inline-block h-[21px] w-[21px] rounded-full bg-white transition-transform ${
+              enabled ? 'translate-x-[21px]' : 'translate-x-0'
             }`}
           />
         </button>
       </div>
 
       {noEmail && (
-        <p className="p-3 rounded-xl bg-[#F5F6FA] border border-[#E3E5EC] text-xs text-[#6B7280]">
+        <p className="p-3 rounded-[14px] bg-[color:var(--page)] border-2 border-[color:var(--card-line)] text-xs text-[#6B7280]">
           Reminders are sent by email. You signed in with a mobile number, so there is no email address to send them to.
         </p>
       )}
 
       <fieldset disabled={!enabled || saving} className="space-y-2">
-        <legend className="text-xs font-semibold text-[#1E2233] mb-2">How often?</legend>
+        <legend className="text-xs font-extrabold text-[#1E2233] mb-2">How often?</legend>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {OPTIONS.map((opt) => {
             const selected = user.reminder_frequency === opt.id;
             return (
               <label
                 key={opt.id}
-                className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-colors ${
+                className={`flex items-center gap-3 p-3.5 rounded-[18px] border-[3px] transition-colors ${
                   !enabled
-                    ? 'border-[#E3E5EC] bg-[#F5F6FA] text-[#6B7280] cursor-not-allowed'
+                    ? 'border-[color:var(--card-line)] bg-[#F7F8FC] text-[#9AA1B4] cursor-not-allowed'
                     : selected
-                    ? 'border-[#3B4FE0] bg-[#EEEDFE]/60 text-[#26215C] cursor-pointer'
-                    : 'border-[#E3E5EC] bg-white text-[#1E2233] hover:border-[#3B4FE0]/40 cursor-pointer'
+                    ? 'border-[color:var(--brand-edge)] bg-[color:var(--brand)] text-white cursor-pointer'
+                    : 'border-[color:var(--card-line)] bg-white text-[#1E2233] hover:border-[color:var(--brand-line)] cursor-pointer'
                 }`}
               >
                 <input
@@ -115,23 +115,23 @@ export const ReminderSettingsCard: React.FC = () => {
                   value={opt.id}
                   checked={selected}
                   onChange={() => save({ reminder_frequency: opt.id }, `Reminders set to ${opt.title.toLowerCase()}.`)}
-                  className="accent-[#3B4FE0]"
+                  className="sr-only"
                 />
-                <span className={selected && enabled ? 'text-[#3B4FE0]' : ''}>{opt.icon}</span>
+                <span>{opt.icon}</span>
                 <span className="text-sm">
-                  <span className="block font-semibold">{opt.title}</span>
-                  <span className="block text-xs text-[#6B7280]">{opt.detail}</span>
+                  <span className="block font-extrabold">{opt.title}</span>
+                  <span className="block text-xs font-semibold opacity-75">{opt.detail}</span>
                 </span>
               </label>
             );
           })}
         </div>
         <label className="flex flex-wrap items-center gap-2 pt-2 text-sm text-[#1E2233]">
-          <span className="font-semibold">Send at</span>
+          <span className="font-extrabold">Send at</span>
           <select
             value={reminderHour(user.reminder_frequency, user.reminder_hour)}
             onChange={(e) => save({ reminder_hour: Number(e.target.value) }, `Reminders will arrive at ${formatHour(Number(e.target.value))} IST.`)}
-            className="px-3 py-2 rounded-xl border border-[#E3E5EC] bg-white text-sm focus:border-[#3B4FE0] outline-none disabled:bg-[#F5F6FA] disabled:text-[#6B7280]"
+            className="px-3.5 py-2.5 rounded-2xl border-2 border-[color:var(--card-line)] bg-[color:var(--page)] text-sm font-bold focus:border-[color:var(--brand)] outline-none disabled:text-[#9AA1B4]"
           >
             {REMINDER_HOURS.map((h) => (
               <option key={h} value={h}>
@@ -146,7 +146,7 @@ export const ReminderSettingsCard: React.FC = () => {
 
       <div className="min-h-5 text-xs" aria-live="polite">
         {status && (
-          <span className={`inline-flex items-center gap-1 font-semibold ${status.type === 'saved' ? 'text-emerald-700' : 'text-rose-700'}`}>
+          <span className={`inline-flex items-center gap-1 font-bold ${status.type === 'saved' ? 'text-[#0B7A67]' : 'text-[#C24A2C]'}`}>
             {status.type === 'saved' && <Check className="w-3.5 h-3.5" />}
             {status.text}
           </span>

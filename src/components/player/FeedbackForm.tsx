@@ -63,11 +63,11 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ youtubeId, videoTitl
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#3B4FE0]/10 text-[#3B4FE0] flex items-center justify-center">
+          <div className="w-7 h-7 rounded-xl bg-[color:var(--brand)]/10 text-[color:var(--brand)] flex items-center justify-center">
             <MessageSquare className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-[#1E2233]">Private Educator Feedback</h4>
+            <h4 className="text-sm font-bold text-[#1E2233]">Private Educator Feedback</h4>
             <p className="text-[11px] text-[#6B7280]">
               Direct one-way note to the channel educator (write-only, confidential)
             </p>
@@ -75,22 +75,22 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ youtubeId, videoTitl
         </div>
 
         {user && (
-          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#F5F6FA] border border-[#E3E5EC] text-[#6B7280]">
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[color:var(--page)] border-2 border-[#E3E5EC] text-[#6B7280]">
             {remaining} / 5 submissions left this hr
           </span>
         )}
       </div>
 
       {feedbackState.status === 'success' && (
-        <div className="p-3 bg-[#E1F5EE] border border-[#BCE8DC] text-[#04342C] rounded-xl text-xs flex items-center gap-2">
+        <div className="p-3 bg-[#E1F5EE] border-2 border-[#BCE8DC] text-[#04342C] rounded-[14px] text-xs flex items-center gap-2">
           <CheckCircle className="w-4 h-4 text-[#12A594] shrink-0" />
           <span>{feedbackState.text}</span>
         </div>
       )}
 
       {feedbackState.status === 'error' && (
-        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+        <div className="p-3 bg-[#FFE9E2] border border-[#FFC3B1] text-[#8A2E17] rounded-[14px] text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-[#C24A2C] shrink-0" />
           <span>{feedbackState.text}</span>
         </div>
       )}
@@ -107,7 +107,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ youtubeId, videoTitl
           value={message}
           disabled={!user || submitting}
           onChange={(e) => setMessage(e.target.value)}
-          className="w-full p-3 text-xs sm:text-sm border border-[#E3E5EC] rounded-xl outline-none focus:border-[#3B4FE0] focus:ring-1 focus:ring-[#3B4FE0] resize-none disabled:bg-[#F5F6FA] disabled:cursor-not-allowed"
+          className="w-full p-3 text-xs sm:text-sm border-2 border-[#E3E5EC] rounded-[14px] outline-none focus:border-[color:var(--brand)] focus:ring-1 focus:ring-[color:var(--brand)] resize-none disabled:bg-[color:var(--page)] disabled:cursor-not-allowed"
         />
 
         <div className="flex items-center justify-between">
@@ -119,7 +119,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ youtubeId, videoTitl
             <button
               type="submit"
               disabled={submitting || !message.trim() || remaining === 0}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-[#3B4FE0] hover:bg-[#2F40BD] disabled:bg-[#CBD5E1] rounded-xl shadow-2xs transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white btn-3d [--edge:var(--brand-edge)] bg-[color:var(--brand)] hover:bg-[color:var(--brand-hover)] disabled:bg-[#CBD5E1] rounded-[14px] shadow-[0_4px_0_var(--card-line)] transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               <Send className="w-3.5 h-3.5" />
               <span>{submitting ? 'Sending...' : 'Submit Feedback'}</span>
@@ -128,7 +128,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ youtubeId, videoTitl
             <button
               type="button"
               onClick={() => setAuthModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-[#3B4FE0] bg-[#3B4FE0]/10 hover:bg-[#3B4FE0]/20 rounded-xl transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[color:var(--brand)] bg-[color:var(--brand)]/10 hover:bg-[color:var(--brand)]/20 rounded-[14px] transition-colors cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Sign in to Submit</span>

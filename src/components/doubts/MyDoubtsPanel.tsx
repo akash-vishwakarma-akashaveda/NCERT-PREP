@@ -32,11 +32,11 @@ export const MyDoubtsPanel: React.FC<MyDoubtsPanelProps> = ({ videoMap, onSelect
   return (
     <section id="my-doubts" aria-labelledby="my-doubts-title" className="space-y-4 scroll-mt-24">
       <div className={standalone ? 'hidden' : 'flex items-center justify-between'}>
-        <h2 id="my-doubts-title" className="text-2xl font-semibold tracking-tight text-[#1E2233] flex items-center gap-2">
+        <h2 id="my-doubts-title" className="text-2xl font-bold tracking-tight text-[#1E2233] flex items-center gap-2">
           <MessageCircleQuestion className="w-5 h-5 text-[#12A594]" />
           My Doubts
           {unreadCount > 0 && (
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#3B4FE0] text-white">
+            <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-[color:var(--brand)] text-white">
               {unreadCount} new {unreadCount === 1 ? 'reply' : 'replies'}
             </span>
           )}
@@ -44,7 +44,7 @@ export const MyDoubtsPanel: React.FC<MyDoubtsPanelProps> = ({ videoMap, onSelect
         {sorted.length > COLLAPSED_COUNT && (
           <button
             onClick={() => setShowAll((v) => !v)}
-            className="text-sm font-semibold text-[#3B4FE0] hover:underline cursor-pointer"
+            className="text-sm font-bold text-[color:var(--brand)] hover:underline cursor-pointer"
           >
             {showAll ? 'Show less' : `View all ${sorted.length}`}
           </button>
@@ -52,12 +52,12 @@ export const MyDoubtsPanel: React.FC<MyDoubtsPanelProps> = ({ videoMap, onSelect
       </div>
 
       {sorted.length === 0 ? (
-        <p className="bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#6B7280] p-6">
+        <p className="bg-white border-2 border-[#E3E5EC] rounded-[14px] text-sm text-[#6B7280] p-6">
           Stuck on something? Open any lesson and use <strong>Ask a doubt</strong> below the video. Your
           educator&apos;s replies will show up here.
         </p>
       ) : (
-        <ul className="bg-white border border-[#E5E7EB] rounded-xl divide-y divide-[#E3E5EC] overflow-hidden">
+        <ul className="bg-white border-2 border-[#E3E5EC] rounded-[14px] divide-y divide-[#E3E5EC] overflow-hidden">
           {visible.map((d) => {
             const expanded = expandedId === d.id;
             const video = videoMap.get(d.youtube_id);
@@ -66,11 +66,11 @@ export const MyDoubtsPanel: React.FC<MyDoubtsPanelProps> = ({ videoMap, onSelect
                 <button
                   onClick={() => toggle(d)}
                   aria-expanded={expanded}
-                  className="w-full text-left p-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-[#F5F6FA]"
+                  className="w-full text-left p-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-[color:var(--page)]"
                 >
                   <div className="min-w-0 space-y-1">
                     <DoubtStatusBadge status={d.status} unread={d.student_unread} />
-                    <p className="text-sm font-semibold text-[#1E2233] line-clamp-1">{d.question}</p>
+                    <p className="text-sm font-bold text-[#1E2233] line-clamp-1">{d.question}</p>
                     <p className="text-[11px] text-[#6B7280] truncate">
                       {d.subject} • {d.chapter_name} • {new Date(d.created_at).toLocaleDateString()}
                     </p>
@@ -86,8 +86,8 @@ export const MyDoubtsPanel: React.FC<MyDoubtsPanelProps> = ({ videoMap, onSelect
                   <div className="px-4 pb-4 space-y-3 text-xs">
                     <p className="text-[#1E2233] whitespace-pre-line">{d.question}</p>
                     {d.answer ? (
-                      <div className="p-3 rounded-xl bg-[#E1F5EE] border border-[#BCE8DC] text-[#04342C] space-y-1">
-                        <p className="font-bold">
+                      <div className="p-3 rounded-[14px] bg-[#E1F5EE] border-2 border-[#BCE8DC] text-[#04342C] space-y-1">
+                        <p className="font-extrabold">
                           {d.answered_by || 'Educator'}
                           {d.answered_at && (
                             <span className="font-normal text-[11px]"> • {new Date(d.answered_at).toLocaleString()}</span>
@@ -102,7 +102,7 @@ export const MyDoubtsPanel: React.FC<MyDoubtsPanelProps> = ({ videoMap, onSelect
                       {video?.isActive && (
                         <button
                           onClick={() => onSelectVideo(video)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 font-semibold text-white bg-[#3B4FE0] hover:bg-[#2F40BD] rounded-lg cursor-pointer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 font-bold text-white btn-3d [--edge:var(--brand-edge)] bg-[color:var(--brand)] hover:bg-[color:var(--brand-hover)] rounded-xl cursor-pointer"
                         >
                           <Play className="w-3 h-3 fill-white" />
                           Open lesson
@@ -111,7 +111,7 @@ export const MyDoubtsPanel: React.FC<MyDoubtsPanelProps> = ({ videoMap, onSelect
                       {d.status !== 'closed' && (
                         <button
                           onClick={() => closeDoubt(d)}
-                          className="px-3 py-1.5 font-semibold text-[#6B7280] bg-[#F5F6FA] border border-[#E3E5EC] hover:text-[#1E2233] rounded-lg cursor-pointer"
+                          className="px-3 py-1.5 font-bold text-[#6B7280] bg-[color:var(--page)] border-2 border-[#E3E5EC] hover:text-[#1E2233] rounded-xl cursor-pointer"
                         >
                           {d.status === 'answered' ? 'Mark resolved' : 'Withdraw'}
                         </button>

@@ -8,8 +8,28 @@ if (admin.apps.length === 0) {
 const db = admin.firestore();
 const RECENT_LOGIN_SECONDS = 5 * 60;
 
+async function deleteWhereUser(collection: string, uid: string) {
+  const snap = await db.collection(collection).where('userId', '==', uid).get();
+  for (let i = 0; i < snap.docs.length; i += 450) {
+    const batch = db.batch();
+    snap.docs.slice(i, i + 450).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+}
+
 /**
- * NFR-1 self-service deletion: users doc + user_progress, the user's doubts, server-side rate-limit state, then the Auth record.
+ * Removes every piece of personal data we hold for a user (not the Auth record): the users doc with its
+ * subcollections (progress, XP history), doubts, feedback (holds their email), their leaderboard entry
+ * (name and avatar shown to classmates) and rate-limit state. Also used for declined or expired parental consent.
+ */
+export async function eraseUserData(uid: string) {
+  await db.recursiveDelete(db.collection('users').doc(uid));
+  await Promise.all([deleteWhereUser('doubts', uid), deleteWhereUser('feedback', uid), db.collection('leaderboard').doc(uid).delete()]);
+  await Promise.all(['feedback', 'doubts', 'consent'].map((k) => db.collection('rate_limits').doc(`${k}_${uid}`).delete()));
+}
+
+/**
+ * NFR-1 self-service deletion: everything eraseUserData covers, then the Auth record.
  * Data is removed before Auth so a failure never leaves personal data the user can no longer delete.
  */
 export const deleteAccount = functions
@@ -28,15 +48,7 @@ export const deleteAccount = functions
     }
 
     const uid = context.auth.uid;
-    await db.recursiveDelete(db.collection('users').doc(uid));
-    const doubts = await db.collection('doubts').where('userId', '==', uid).get();
-    for (let i = 0; i < doubts.docs.length; i += 450) {
-      const batch = db.batch();
-      doubts.docs.slice(i, i + 450).forEach((d) => batch.delete(d.ref));
-      await batch.commit();
-    }
-    await db.collection('rate_limits').doc(`feedback_${uid}`).delete();
-    await db.collection('rate_limits').doc(`doubts_${uid}`).delete();
+    await eraseUserData(uid);
     await admin.auth().deleteUser(uid);
 
     functions.logger.info('Account deleted', { uid });
