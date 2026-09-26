@@ -1,3 +1,5 @@
+> **Superseded 23 September 2026** — the project now has ~2 years of AWS credits, which removes the cost pressure that ruled out EC2/Lightsail below. See **[`AWS_EC2_MIGRATION_PLAN.md`](./AWS_EC2_MIGRATION_PLAN.md)** for the current plan (EC2/Lightsail + RDS Postgres + Google Identity Services, full Firebase removal). This file is kept for reference only.
+
 # NCERT Prep — AWS Deployment & Migration Plan
 
 | | |

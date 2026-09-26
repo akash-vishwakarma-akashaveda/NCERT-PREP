@@ -35,3 +35,17 @@ functions/.secret.local
 
 # Office lock files
 ~$*
+
+# SSH keys / credentials (Lightsail default key lives here)
+*.pem
+*.key
+Lightsail_SSH/
+
+# Local tooling / scratch
+.claude/
+
+# Legacy Firebase Cloud Functions - replaced by prep_ncert/backend
+ncert_prep/
+
+# Source spreadsheets (content data, not code)
+*.xlsx
