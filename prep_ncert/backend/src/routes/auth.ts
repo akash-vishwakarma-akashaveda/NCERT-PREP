@@ -27,17 +27,26 @@ function sendVerifyEmail(userId: string, email: string) {
 }
 
 router.post('/google', async (req, res) => {
-  const { idToken } = req.body as { idToken?: string };
-  if (!idToken) return res.status(400).json({ error: 'idToken required' });
+  const { accessToken } = req.body as { accessToken?: string };
+  if (!accessToken) return res.status(400).json({ error: 'accessToken required' });
 
-  let payload;
+  // The token is minted in the browser by Google's popup flow, so it could be one issued to any
+  // other site. getTokenInfo checks it against Google and reports the audience it was issued to;
+  // that audience MUST be our own client id, or a token from another app would sign its holder in.
+  let payload: { email?: string; sub?: string; name?: string; picture?: string };
   try {
-    const ticket = await googleClient.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
-    payload = ticket.getPayload();
+    const info = await googleClient.getTokenInfo(accessToken);
+    if (info.aud !== process.env.GOOGLE_CLIENT_ID || !info.email) throw new Error('wrong audience');
+    // getTokenInfo has the identity but not the display name or avatar, which userinfo carries.
+    const profile = (await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(10_000),
+    }).then((r) => (r.ok ? r.json() : {}))) as { name?: string; picture?: string };
+    payload = { email: info.email, sub: info.sub, name: profile.name, picture: profile.picture };
   } catch {
     return res.status(401).json({ error: 'Invalid Google token' });
   }
-  if (!payload?.email) return res.status(401).json({ error: 'Invalid Google token' });
+  if (!payload.email) return res.status(401).json({ error: 'Invalid Google token' });
 
   const existingByEmail = await prisma.user.findUnique({ where: { email: payload.email }, select: { id: true } });
   const user = await prisma.user.upsert({

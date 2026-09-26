@@ -64,52 +64,45 @@ export function toFrontendUser(u: BackendUser): User {
 
 // ---- Google Identity Services: loaded on demand, no build-time dependency ----
 
-interface GsiNotification {
-  isNotDisplayed: () => boolean;
-  isSkippedMoment: () => boolean;
-  getNotDisplayedReason: () => string;
-  getSkippedReason: () => string;
+// The OAuth popup flow, not One Tap. One Tap can only offer accounts the browser already has a
+// Google session for, so it fails outright for anyone signed out of Google or browsing privately:
+// "Provider's accounts list is empty" -> FedCM NetworkError -> "cancelled or blocked". The popup
+// lets the user sign into Google as part of signing in here, and it can be opened from a click,
+// which the reauthentication-before-account-deletion path needs.
+
+interface GoogleTokenResponse {
+  access_token?: string;
+  error?: string;
 }
 
-// Chrome can block Google's FedCM-based sign-in per-site (the little icon left of the address
-// bar), including auto-suppressing it right after the user dismisses it once — that's a browser
-// setting, not our bug, so tell the user how to fix it instead of a generic "cancelled" message.
-// isNotDisplayed() and isSkippedMoment() use different reason vocabularies, so they're checked
-// separately: 'issuing_failed' is what Chrome reports when it silently refuses a re-prompt after
-// an earlier dismissal (the NetworkError seen in devtools), which is the case this is really for.
-const BLOCKED_NOT_DISPLAYED_REASONS = ['suppressed_by_user', 'opt_out_or_no_session', 'unregistered_origin', 'browser_not_supported'];
-const BLOCKED_SKIPPED_REASONS = ['issuing_failed'];
-const BLOCKED_MESSAGE =
-  'Your browser is blocking Google sign-in for this site. Click the icon just left of the address bar and allow it, then try again — or sign in with email below.';
-
-function gsiFailureMessage(notification: GsiNotification): string {
-  if (notification.isNotDisplayed()) {
-    return BLOCKED_NOT_DISPLAYED_REASONS.includes(notification.getNotDisplayedReason())
-      ? BLOCKED_MESSAGE
-      : 'Google sign-in was cancelled or blocked by the browser.';
-  }
-  return BLOCKED_SKIPPED_REASONS.includes(notification.getSkippedReason())
-    ? BLOCKED_MESSAGE
-    : 'Google sign-in was cancelled or blocked by the browser.';
+interface GoogleTokenClient {
+  requestAccessToken: () => void;
 }
 
 declare global {
   interface Window {
     google?: {
       accounts: {
-        id: {
-          initialize: (config: { client_id: string; callback: (resp: { credential: string }) => void }) => void;
-          prompt: (momentListener?: (notification: GsiNotification) => void) => void;
+        oauth2: {
+          initTokenClient: (config: {
+            client_id: string;
+            scope: string;
+            callback: (response: GoogleTokenResponse) => void;
+            error_callback?: (error: { type: string }) => void;
+          }) => GoogleTokenClient;
         };
       };
     };
   }
 }
 
+const POPUP_BLOCKED_MESSAGE =
+  'Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again — or sign in with email below.';
+
 let gsiScriptPromise: Promise<void> | null = null;
 
 function loadGoogleIdentityScript(): Promise<void> {
-  if (window.google?.accounts?.id) return Promise.resolve();
+  if (window.google?.accounts?.oauth2) return Promise.resolve();
   if (!gsiScriptPromise) {
     gsiScriptPromise = new Promise((resolve, reject) => {
       const script = document.createElement('script');
@@ -123,18 +116,30 @@ function loadGoogleIdentityScript(): Promise<void> {
   return gsiScriptPromise;
 }
 
-async function getGoogleIdToken(): Promise<string> {
+/** Fetch Google's script ahead of the click, so opening the popup stays inside the user gesture. */
+export function preloadGoogleSignIn(): void {
+  void loadGoogleIdentityScript().catch(() => {});
+}
+
+async function getGoogleAccessToken(): Promise<string> {
   await loadGoogleIdentityScript();
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   if (!clientId) throw new Error('Google sign-in is not configured (VITE_GOOGLE_CLIENT_ID missing).');
 
   return new Promise((resolve, reject) => {
-    window.google!.accounts.id.initialize({ client_id: clientId, callback: (resp) => resolve(resp.credential) });
-    window.google!.accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        reject(new Error(gsiFailureMessage(notification)));
-      }
-    });
+    window.google!.accounts.oauth2
+      .initTokenClient({
+        client_id: clientId,
+        scope: 'openid email profile',
+        callback: (response) => {
+          if (response.access_token) resolve(response.access_token);
+          else reject(new Error('Google sign-in was cancelled.'));
+        },
+        error_callback: (error) => {
+          reject(new Error(error.type === 'popup_failed_to_open' ? POPUP_BLOCKED_MESSAGE : 'Google sign-in was cancelled.'));
+        },
+      })
+      .requestAccessToken();
   });
 }
 
@@ -142,8 +147,8 @@ async function getGoogleIdToken(): Promise<string> {
 
 export const AuthService = {
   async signInWithGoogle(): Promise<BackendUser> {
-    const idToken = await getGoogleIdToken();
-    return api.post<BackendUser>('/api/auth/google', { idToken });
+    const accessToken = await getGoogleAccessToken();
+    return api.post<BackendUser>('/api/auth/google', { accessToken });
   },
   signInWithEmail: (email: string, password: string) => api.post<BackendUser>('/api/auth/login', { email, password }),
   signUpWithEmail: (name: string, email: string, password: string, referralCode?: string) =>

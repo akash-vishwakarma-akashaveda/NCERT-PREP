@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { X, AlertCircle, ArrowLeft, CheckCircle2, Eye, EyeOff, Gift } from 'lucide-react';
 import { LogoMark } from '../common/Logo';
+import { preloadGoogleSignIn } from '../../services/auth';
 import { useAuth } from '../../context/AuthContext';
 
 interface AuthPagesProps {
@@ -62,6 +63,12 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ onSuccess, isModal = true 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+
+  // Google's script is fetched as the form appears so the click that follows can open the popup
+  // immediately; opening it after an await risks the browser treating it as an unrequested pop-up.
+  useEffect(() => {
+    if (!isModal || authModalOpen) preloadGoogleSignIn();
+  }, [isModal, authModalOpen]);
 
   if (isModal && !authModalOpen) return null;
 

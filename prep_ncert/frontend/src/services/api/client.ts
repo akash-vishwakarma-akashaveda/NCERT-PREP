@@ -1,6 +1,10 @@
 import axios, { AxiosError, type Method } from 'axios';
 
-export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:4000';
+// Behind Nginx the API is same-origin, so that is the right fallback for a production build with
+// VITE_API_URL unset - defaulting to localhost there would silently point the whole app at nothing.
+export const API_URL =
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  (import.meta.env.DEV ? 'http://localhost:4000' : window.location.origin);
 
 export class ApiError extends Error {
   status: number;
