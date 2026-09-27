@@ -401,26 +401,35 @@ body {
 
 /* Landing hero: sky and confetti on the left (Class 1–5), graph paper through the middle (6–10),
    faint formulas on the right (11–12). */
+/* One soft brand wash on a near-white base. Three coloured washes at once read as a kids' worksheet
+   rather than a product; the three looks are told properly in the section below, with real screens. */
 .landing-hero {
   background:
-    linear-gradient(rgba(59, 79, 224, 0.045) 1px, transparent 1px) 0 0 / 32px 32px,
-    linear-gradient(90deg, rgba(59, 79, 224, 0.045) 1px, transparent 1px) 0 0 / 32px 32px,
-    radial-gradient(40rem 28rem at 0% 0%, #D9EEFF, transparent 70%),
-    radial-gradient(34rem 24rem at 100% 5%, #FFF0C9, transparent 70%),
-    radial-gradient(40rem 26rem at 75% 100%, #ECE6FF, transparent 70%),
-    #F7F8FC;
+    linear-gradient(rgba(30, 34, 51, 0.022) 1px, transparent 1px) 0 0 / 34px 34px,
+    linear-gradient(90deg, rgba(30, 34, 51, 0.022) 1px, transparent 1px) 0 0 / 34px 34px,
+    radial-gradient(48rem 30rem at 88% -12%, rgba(59, 79, 224, 0.11), transparent 68%),
+    linear-gradient(180deg, #FCFCFE, #F5F6FA);
+  border-bottom: 1px solid #E8EAF2;
 }
+/* Kept as texture, not decoration: faint enough to feel like paper, too faint to compete with the copy. */
 .landing-mix-left,
 .landing-mix-right { position: absolute; inset: 0; pointer-events: none; }
 .landing-mix-left {
-  background: url('/doodles/primary-confetti.svg') 0 0 / 260px repeat;
-  -webkit-mask-image: linear-gradient(90deg, black, transparent 42%);
-  mask-image: linear-gradient(90deg, black, transparent 42%);
+  opacity: 0.2;
+  background: url('/doodles/primary-confetti.svg') 0 0 / 300px repeat;
+  -webkit-mask-image: linear-gradient(90deg, black, transparent 34%);
+  mask-image: linear-gradient(90deg, black, transparent 34%);
 }
 .landing-mix-right {
-  background: url('/doodles/senior.svg') 0 0 / 420px repeat;
-  -webkit-mask-image: linear-gradient(270deg, black, transparent 40%);
-  mask-image: linear-gradient(270deg, black, transparent 40%);
+  opacity: 0.16;
+  background: url('/doodles/senior.svg') 0 0 / 460px repeat;
+  -webkit-mask-image: linear-gradient(270deg, black, transparent 32%);
+  mask-image: linear-gradient(270deg, black, transparent 32%);
+}
+/* Both prefixes: without -webkit- the strip ends in a hard cut at the viewport edge, not a fade. */
+.marquee-fade {
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
 }
 
 /* Scroll reveal. Content only starts hidden once JS marks the page ready, so it never disappears without JS. */

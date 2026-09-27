@@ -86,7 +86,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
               <button
                 onClick={() => setAuthModalOpen(true)}
-                className="btn-3d [--edge:#E0A81F] inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] font-extrabold text-[#1E2233] bg-[#FFC53D] hover:bg-[#FFCD55] rounded-[14px] cursor-pointer"
+                className="btn-3d [--edge:var(--brand-edge)] inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] font-extrabold text-white bg-[color:var(--brand)] hover:bg-[color:var(--brand-hover)] rounded-[14px] cursor-pointer"
               >
                 <LogIn className="w-4 h-4 sm:hidden" />
                 <span className="sm:hidden">Sign in</span>
