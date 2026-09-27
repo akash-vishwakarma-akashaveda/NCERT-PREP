@@ -16,7 +16,7 @@ interface LandingPageProps {
   onExploreCurriculum: () => void;
   onSelectVideo: (video: Video) => void;
   onSelectClass: (classSort: string) => void;
-  onLaunchDemoAuth: () => void;
+  onLaunchDemo: () => void;
 }
 
 /** Site column shared by the navbar, footer and every landing band. */
@@ -98,7 +98,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onExploreCurriculum,
   onSelectVideo,
   onSelectClass,
-  onLaunchDemoAuth,
+  onLaunchDemo,
 }) => {
   const { lastWatchedId, isCompleted } = useProgress();
   const lastWatchedVideo = lastWatchedId ? allVideos.find((v) => v.youtube_id === lastWatchedId) || null : null;
@@ -169,7 +169,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               pull your child away from the lesson.
             </p>
             <div className="animate-fade-up [animation-delay:240ms] flex flex-wrap gap-3">
-              <button onClick={onLaunchDemoAuth} className={`${btnPrimary} px-6 py-3.5 text-[14.5px] rounded-[18px] group`}>
+              <button onClick={onLaunchDemo} className={`${btnPrimary} px-6 py-3.5 text-[14.5px] rounded-[18px] group`}>
                 Start learning free <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
               <button onClick={onExploreCurriculum} className={`${btnSecondary} px-6 py-3.5 text-[14.5px] rounded-[18px]`}>
@@ -370,7 +370,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <h2 className="text-[30px] sm:text-[38px] leading-tight text-[#1E2233] text-balance">Your next chapter is one tap away.</h2>
               <p className="text-[15px] font-bold text-[#7A5C10]">{TAGLINE}. Free to use: pick your class and start where it matters most.</p>
               <div className="flex flex-col sm:flex-row justify-center gap-3 mt-2">
-                <button onClick={onLaunchDemoAuth} className={`${btnPrimary} px-6 py-3.5`}>
+                <button onClick={onLaunchDemo} className={`${btnPrimary} px-6 py-3.5`}>
                   Start learning free
                 </button>
                 <button onClick={onExploreCurriculum} className={`${btnSecondary} px-6 py-3.5`}>

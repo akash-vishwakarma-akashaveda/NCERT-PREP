@@ -14,6 +14,10 @@ export const VideoService = {
   async fetchVideos(): Promise<Video[]> {
     return api.get<Video[]>('/api/videos');
   },
+  /** Public demo lessons for the landing page: no session required. */
+  async fetchFeatured(): Promise<Video[]> {
+    return api.get<Video[]>('/api/videos/featured');
+  },
   async addVideo(video: Video): Promise<void> {
     await api.post('/api/videos', video);
   },

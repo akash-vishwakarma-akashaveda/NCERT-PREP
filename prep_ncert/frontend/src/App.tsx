@@ -12,6 +12,7 @@ import { AuthPages } from './components/auth/AuthPages';
 import { SearchResultsModal } from './components/search/SearchResultsModal';
 import { RevisionNotesModal } from './components/app/RevisionNotesModal';
 import { LandingPage } from './pages/LandingPage';
+import { DemoPage } from './pages/DemoPage';
 import { BrowsePage } from './pages/BrowsePage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { ParentConsentPage } from './pages/ParentConsentPage';
@@ -72,7 +73,6 @@ const PublicLayout: React.FC = () => {
 
 const LandingRoute: React.FC = () => {
   const { classes, allVideos, loading } = useCatalogContext();
-  const { setAuthModalOpen } = useAuth();
   const navigate = useNavigate();
   return (
     <LandingPage
@@ -82,7 +82,7 @@ const LandingRoute: React.FC = () => {
       onExploreCurriculum={() => navigate('/browse')}
       onSelectVideo={(v) => navigate(`/watch/${encodeURIComponent(v.youtube_id)}`)}
       onSelectClass={(classSort) => navigate(`/browse?class=${classSort}`)}
-      onLaunchDemoAuth={() => setAuthModalOpen(true)}
+      onLaunchDemo={() => navigate('/demo')}
     />
   );
 };
@@ -133,6 +133,7 @@ export const App: React.FC = () => (
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<LandingRoute />} />
                 <Route path="/browse" element={<BrowseRoute />} />
+                <Route path="/demo" element={<DemoPage />} />
                 <Route path="/privacy" element={<PrivacyRoute />} />
                 <Route path="/parent-consent" element={<ParentConsentPage />} />
                 <Route path="/watch/:videoId" element={<LessonPage publicMode />} />
