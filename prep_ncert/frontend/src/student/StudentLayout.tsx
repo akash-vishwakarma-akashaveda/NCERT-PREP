@@ -9,6 +9,7 @@ import {
   Bell,
   UserRound,
   Shield,
+  User,
   LogOut,
   Menu,
   X,
@@ -46,7 +47,7 @@ import { useBadgeUnlocks } from './useBadgeUnlocks';
 import { LogoMark } from '../components/common/Logo';
 import { FocusTimer, useFocusTimer } from './useFocusTimer';
 import { FloatingPomodoroWidget } from '../components/pomodoro/FloatingPomodoroWidget';
-import { ProgressBar, lessonPath, pill } from './ui';
+import { ProgressBar, card, lessonPath, pill } from './ui';
 import { useCourse } from './useCourse';
 import { UserAvatar } from '../data/avatars';
 
@@ -105,6 +106,8 @@ export const StudentLayout: React.FC = () => {
   const [adminOpenDoubts, setAdminOpenDoubts] = useState(0);
   const [adminFeedbackCount, setAdminFeedbackCount] = useState(0);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const isUserAdmin = isAdmin;
 
@@ -213,6 +216,24 @@ export const StudentLayout: React.FC = () => {
     await signOut();
     navigate('/', { replace: true });
   };
+
+  // Close the avatar menu on an outside click or Escape. The ref wraps the button and the menu
+  // together, so clicking the button itself is not treated as "outside" and does not fight the toggle.
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!profileMenuRef.current?.contains(event.target as Node)) setProfileMenuOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setProfileMenuOpen(false);
+    };
+    window.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('mousedown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [profileMenuOpen]);
 
   const classVideos = user.grade_preference && !isUserAdmin
     ? activeVideos.filter((v) => v.class_sort === user.grade_preference)
@@ -517,24 +538,60 @@ export const StudentLayout: React.FC = () => {
                 adminFeedbackCount={adminFeedbackCount}
               />
             </div>
-            <NavLink
-              to="/app/profile"
-              aria-label="Profile"
-              className="relative shrink-0 hover:opacity-90 transition-opacity"
-            >
-              {isUserAdmin ? (
-                <div className="w-10 h-10 rounded-[14px] bg-[#1E2233] text-white font-display text-[15px] flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-[#A9E6D3]" />
+            <div ref={profileMenuRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setProfileMenuOpen((prev) => !prev)}
+                aria-label="Your account"
+                aria-expanded={profileMenuOpen}
+                aria-haspopup="menu"
+                className="block rounded-[14px] hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                {isUserAdmin ? (
+                  <div className="w-10 h-10 rounded-[14px] bg-[#1E2233] text-white font-display text-[15px] flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-[#A9E6D3]" />
+                  </div>
+                ) : (
+                  <UserAvatar
+                    photoURL={user.photoURL}
+                    displayName={user.displayName}
+                    size="md"
+                    className={`ring-2 ${profileMenuOpen ? 'ring-[color:var(--brand)]' : 'ring-[color:var(--card-line)]'}`}
+                  />
+                )}
+              </button>
+
+              {profileMenuOpen && (
+                <div
+                  role="menu"
+                  className={`${card} absolute right-0 top-[calc(100%+10px)] z-50 w-56 p-1.5 animate-pop-soft`}
+                >
+                  <div className="px-3 py-2 border-b-2 border-[color:var(--card-line)] mb-1.5">
+                    <p className="text-[13px] font-extrabold text-[#1E2233] truncate">{user.displayName || 'Student'}</p>
+                    <p className="text-[11px] font-semibold text-[#6B7280] truncate">{user.email}</p>
+                  </div>
+                  <NavLink
+                    to="/app/profile"
+                    role="menuitem"
+                    onClick={() => setProfileMenuOpen(false)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl text-[13px] font-extrabold text-[#4B5168] hover:bg-[#F1F3FB]"
+                  >
+                    <User className="w-[17px] h-[17px]" /> View profile
+                  </NavLink>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      void handleLogout();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-2xl text-[13px] font-extrabold text-[#C24A2C] hover:bg-[#FFE9E2] cursor-pointer"
+                  >
+                    <LogOut className="w-[17px] h-[17px]" /> Sign out
+                  </button>
                 </div>
-              ) : (
-                <UserAvatar
-                  photoURL={user.photoURL}
-                  displayName={user.displayName}
-                  size="md"
-                  className="ring-2 ring-[color:var(--card-line)]"
-                />
               )}
-            </NavLink>
+            </div>
           </div>
         </header>
 
