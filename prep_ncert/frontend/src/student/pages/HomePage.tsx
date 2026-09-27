@@ -307,14 +307,15 @@ export const HomePage: React.FC = () => {
             <div className="flex items-baseline justify-between gap-3 flex-wrap">
               <h2 id="subjects-title" className="text-[21px]">Your subjects</h2>
               <span className="text-[12.5px] font-bold text-[#6B7280]">
-                {classLabel(course.classSort)} ·{' '}
+                {classLabel(course.classSort)}
+                {course.stream ? ` · ${course.stream.label}` : ''} ·{' '}
                 <Link to="/app/profile" className="text-[color:var(--brand)] hover:text-[color:var(--brand-edge)]">
-                  Change class
+                  {course.hasStreams && !course.stream ? 'Pick your stream' : 'Change class'}
                 </Link>
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5">
-              {course.subjects.slice(0, 8).map((s) => (
+              {course.streamSubjects.slice(0, 8).map((s) => (
                 <SubjectCard key={s.group.name} summary={s} />
               ))}
             </div>

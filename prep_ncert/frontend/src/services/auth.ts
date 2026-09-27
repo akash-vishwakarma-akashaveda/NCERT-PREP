@@ -18,6 +18,7 @@ export interface BackendUser {
   studyGoalMinutes: number | null;
   onboardingCompleted: boolean;
   focusSubjects: string[];
+  stream: string | null;
   remindersEnabled: boolean;
   reminderFrequency: 'daily' | 'weekly';
   reminderHour: number | null;
@@ -56,6 +57,7 @@ export function toFrontendUser(u: BackendUser): User {
     last_watched_video: u.lastWatchedVideo ?? null,
     onboarding_completed: u.onboardingCompleted,
     focus_subjects: u.focusSubjects,
+    stream: u.stream ?? null,
     xp: u.xp,
     created_at: u.createdAt,
     consent: u.consent as UserConsent | undefined,

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { Check, ChevronDown, ChevronLeft, FileText, Play, Bookmark, BookOpen, Star } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, FileText, Play, Bookmark, BookOpen, Star, Sparkles } from 'lucide-react';
 import { NotesTarget } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/ProgressContext';
@@ -10,7 +10,7 @@ import { classLabel } from '../../data/gamification';
 import { getSubjectTileStyle } from '../../data/colorTokens';
 import { SubjectSummary, useCourse } from '../useCourse';
 import { Mascot, useStage } from '../stage';
-import { EmptyState, PageHeader, ProgressBar, SubjectGlyph, btnPrimary, chapterNumbers, formatDuration, lessonPath, pill, subjectPath } from '../ui';
+import { EmptyState, PageHeader, ProgressBar, SubjectGlyph, btnPrimary, card, chapterNumbers, formatDuration, lessonPath, pill, subjectPath } from '../ui';
 import { youtubeThumbnail } from '../../services/youtubeApi';
 
 export const SubjectCard: React.FC<{ summary: SubjectSummary }> = ({ summary }) => {
@@ -43,6 +43,14 @@ export const SubjectCard: React.FC<{ summary: SubjectSummary }> = ({ summary }) 
   );
 };
 
+const SubjectGrid: React.FC<{ subjects: SubjectSummary[] }> = ({ subjects }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5">
+    {subjects.map((s) => (
+      <SubjectCard key={s.group.name} summary={s} />
+    ))}
+  </div>
+);
+
 export const SubjectsPage: React.FC = () => {
   const course = useCourse();
   const { isAdmin } = useAuth();
@@ -53,7 +61,11 @@ export const SubjectsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader section="subjects" title="My subjects" description={`${classLabel(course.classSort)} · ${course.subjects.length} subjects`} />
+      <PageHeader
+        section="subjects"
+        title="My subjects"
+        description={`${classLabel(course.classSort)}${course.stream ? ` · ${course.stream.label}` : ''} · ${course.streamSubjects.length} subjects`}
+      />
       {course.subjects.length === 0 ? (
         <EmptyState
           icon={<BookOpen className="w-6 h-6" />}
@@ -62,11 +74,30 @@ export const SubjectsPage: React.FC = () => {
           action={<Link to="/app/textbooks" className={btnPrimary}>Open textbooks</Link>}
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5">
-          {course.subjects.map((s) => (
-            <SubjectCard key={s.group.name} summary={s} />
-          ))}
-        </div>
+        <>
+          {course.hasStreams && !course.stream && (
+            <div className={`${card} p-4 flex flex-wrap items-center gap-3`}>
+              <Sparkles className="w-5 h-5 text-[color:var(--brand)] shrink-0" />
+              <p className="text-[13px] font-semibold text-[#4B5168] flex-1 min-w-[220px]">
+                Pick your stream and we'll put those subjects first. Every subject stays open either way.
+              </p>
+              <Link to="/app/profile" className={`${btnPrimary} px-4 py-2 text-[13px]`}>Choose my stream</Link>
+            </div>
+          )}
+          <SubjectGrid subjects={course.streamSubjects} />
+          {course.otherSubjects.length > 0 && (
+            <details className="group">
+              <summary className="cursor-pointer list-none flex items-center gap-2 text-[13px] font-extrabold text-[#4B5168] py-2">
+                <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                Other subjects in {classLabel(course.classSort)} ({course.otherSubjects.length})
+              </summary>
+              <p className="text-[12px] font-semibold text-[#6B7280] pb-3">
+                Outside your stream, but open to you — take a look whenever you like.
+              </p>
+              <SubjectGrid subjects={course.otherSubjects} />
+            </details>
+          )}
+        </>
       )}
     </div>
   );

@@ -64,6 +64,9 @@ model User {
   studyGoalMinutes Int?
   onboardingCompleted Boolean    @default(false)
   focusSubjects    String[]      @default([])
+  // Classes 11-12 split into streams (science/commerce/humanities). Null for classes 1-10, and
+  // for seniors who have not picked one: the catalog still shows every subject either way.
+  stream           String?
 
   consentStatus       ConsentStatus @default(PENDING)
   consentAgeGroup      String?

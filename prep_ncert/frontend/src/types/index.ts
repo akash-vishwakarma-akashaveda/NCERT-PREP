@@ -39,6 +39,8 @@ export interface User {
   last_watched_video: string | null;
   onboarding_completed?: boolean;
   focus_subjects?: string[];
+  /** Classes 11-12 only: 'science' | 'commerce' | 'humanities'. Null until the student picks one. */
+  stream?: string | null;
   xp?: number;
   level?: number;
   created_at?: string | number;

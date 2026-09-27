@@ -49,6 +49,7 @@ function toBackendProfileUpdate(updates: Partial<Omit<User, 'role' | 'userId'>>)
   if (updates.grade_preference !== undefined) out.classGrade = parseInt(updates.grade_preference, 10) || undefined;
   if (updates.study_goal_minutes !== undefined) out.studyGoalMinutes = updates.study_goal_minutes;
   if (updates.focus_subjects !== undefined) out.focusSubjects = updates.focus_subjects;
+  if (updates.stream !== undefined) out.stream = updates.stream ?? '';
   if (updates.last_watched_video !== undefined && updates.last_watched_video !== null) out.lastWatchedVideo = updates.last_watched_video;
   if (updates.onboarding_completed !== undefined) out.onboardingCompleted = updates.onboarding_completed;
   if (updates.streak_days !== undefined) out.streak = updates.streak_days;

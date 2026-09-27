@@ -22,6 +22,7 @@ import { classLabel, currentStreak } from '../../data/gamification';
 import { ClassTile } from '../home/ClassGrid';
 import { CUTE_CHARACTERS, UserAvatar } from '../../data/avatars';
 import { XpHistoryCard } from './XpHistoryCard';
+import { STREAMS, classHasStreams, getStream, isInStream } from '../../data/streams';
 import { LeaderboardService } from '../../services/leaderboard';
 import { ReferralService, ReferralStats } from '../../services/referrals';
 
@@ -126,6 +127,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
   const [selectedGrade, setSelectedGrade] = useState(user?.grade_preference || '');
   const [studyGoal, setStudyGoal] = useState<number>(user?.study_goal_minutes || 25);
   const [focusSubjects, setFocusSubjects] = useState<string[]>(user?.focus_subjects || []);
+  const [stream, setStream] = useState<string>(user?.stream || '');
   const [selectedAvatar, setSelectedAvatar] = useState<string>(user?.photoURL || 'owl');
   const [avatarSaved, setAvatarSaved] = useState(false);
 
@@ -175,6 +177,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
         grade_preference: selectedGrade,
         study_goal_minutes: studyGoal,
         focus_subjects: focusSubjects.filter((s) => subjectsForSelectedGrade.includes(s)),
+        stream: classHasStreams(selectedGrade) ? stream : '',
         photoURL: selectedAvatar,
       };
       await updateProfile({
@@ -182,6 +185,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
         grade_preference: selectedGrade,
         study_goal_minutes: studyGoal,
         focus_subjects: focusSubjects.filter((s) => subjectsForSelectedGrade.includes(s)),
+        stream: classHasStreams(selectedGrade) ? stream : '',
         photoURL: selectedAvatar,
       });
       // Immediately migrate leaderboard entry to ensure strict class isolation
@@ -492,6 +496,39 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
             <strong>{classLabel(selectedGrade)}</strong>. Your completed lessons and favourites from{' '}
             {classLabel(user.grade_preference)} are kept, but your dashboard and syllabus will show{' '}
             {classLabel(selectedGrade)} after you save.
+          </div>
+        )}
+
+        {classHasStreams(selectedGrade) && (
+          <div>
+            <label className="block text-xs font-extrabold text-[#1E2233] mb-1.5">
+              Stream <span className="font-semibold text-[#6B7280]">(its subjects lead; the rest stay open)</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {STREAMS.map((option) => {
+                const active = stream === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      setStream(active ? '' : option.id);
+                      if (!active) {
+                        setFocusSubjects(subjectsForSelectedGrade.filter((subject) => isInStream(subject, getStream(option.id))));
+                      }
+                    }}
+                    className={`px-3 py-1.5 text-xs font-extrabold rounded-[14px] border transition-all cursor-pointer ${
+                      active
+                        ? 'border-[color:var(--brand)] bg-[#EEEDFE] text-[color:var(--brand)]'
+                        : 'border-[#E3E5EC] bg-white text-[#6B7280] hover:bg-[color:var(--page)]'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

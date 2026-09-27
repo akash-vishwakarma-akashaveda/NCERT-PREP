@@ -92,6 +92,8 @@ const profileSchema = z.object({
   classGrade: z.number().int().min(1).max(12).optional(),
   studyGoalMinutes: z.number().int().min(0).optional(),
   focusSubjects: z.array(z.string()).optional(),
+  // '' clears the choice; the frontend's STREAMS list is the source of these ids.
+  stream: z.enum(['science', 'commerce', 'humanities', '']).optional(),
   lastWatchedVideo: z.string().optional(),
   onboardingCompleted: z.boolean().optional(),
   streak: z.number().int().min(0).optional(),
@@ -101,7 +103,12 @@ const profileSchema = z.object({
 router.patch('/me/profile', async (req, res) => {
   const parsed = profileSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-  const user = await prisma.user.update({ where: { id: req.user!.userId }, data: parsed.data });
+  // '' means "no stream": store it as null rather than an empty string nothing else understands.
+  const { stream, ...rest } = parsed.data;
+  const user = await prisma.user.update({
+    where: { id: req.user!.userId },
+    data: { ...rest, ...(stream !== undefined ? { stream: stream || null } : {}) },
+  });
   res.json(toPublicUser(user));
 });
 

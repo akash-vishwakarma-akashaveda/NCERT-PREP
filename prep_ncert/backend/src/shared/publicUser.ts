@@ -18,6 +18,7 @@ export function toPublicUser(user: User) {
     studyGoalMinutes: user.studyGoalMinutes,
     onboardingCompleted: user.onboardingCompleted,
     focusSubjects: user.focusSubjects,
+    stream: user.stream,
     remindersEnabled: user.remindersEnabled,
     reminderFrequency: user.reminderFrequency,
     reminderHour: user.reminderHour,
