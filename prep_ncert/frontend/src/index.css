@@ -401,26 +401,91 @@ body {
 
 /* Landing hero: sky and confetti on the left (Class 1–5), graph paper through the middle (6–10),
    faint formulas on the right (11–12). */
+/* Hero backdrop, built in layers rather than as one loud pattern: a cool base wash, a spotlight
+   behind the headline, a dot grid that fades out before it reaches an edge, and two slow aurora
+   fields. Each layer is weak on its own; the depth comes from stacking them. */
 .landing-hero {
+  position: relative;
+  isolation: isolate;
   background:
-    linear-gradient(rgba(59, 79, 224, 0.045) 1px, transparent 1px) 0 0 / 32px 32px,
-    linear-gradient(90deg, rgba(59, 79, 224, 0.045) 1px, transparent 1px) 0 0 / 32px 32px,
-    radial-gradient(40rem 28rem at 0% 0%, #D9EEFF, transparent 70%),
-    radial-gradient(34rem 24rem at 100% 5%, #FFF0C9, transparent 70%),
-    radial-gradient(40rem 26rem at 75% 100%, #ECE6FF, transparent 70%),
-    #F7F8FC;
+    radial-gradient(56rem 34rem at 50% -18%, rgba(59, 79, 224, 0.13), transparent 62%),
+    linear-gradient(180deg, #FFFFFF 0%, #F8F9FD 52%, #F3F5FC 100%);
 }
-.landing-mix-left,
-.landing-mix-right { position: absolute; inset: 0; pointer-events: none; }
-.landing-mix-left {
-  background: url('/doodles/primary-confetti.svg') 0 0 / 260px repeat;
-  -webkit-mask-image: linear-gradient(90deg, black, transparent 42%);
-  mask-image: linear-gradient(90deg, black, transparent 42%);
+
+/* Dot grid: structure without graph-paper stiffness. Masked so it dissolves towards the edges. */
+.landing-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(30, 34, 51, 0.13) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(75% 65% at 50% 28%, #000 25%, transparent 78%);
+  mask-image: radial-gradient(75% 65% at 50% 28%, #000 25%, transparent 78%);
 }
-.landing-mix-right {
-  background: url('/doodles/senior.svg') 0 0 / 420px repeat;
-  -webkit-mask-image: linear-gradient(270deg, black, transparent 40%);
-  mask-image: linear-gradient(270deg, black, transparent 40%);
+
+/* A hairline that fades at both ends, instead of a hard rule across the page. */
+.landing-hero::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(30, 34, 51, 0.14), transparent);
+}
+
+/* Aurora fields. Heavily blurred, low opacity, drifting slowly enough to be felt, not watched. */
+.landing-aurora {
+  position: absolute;
+  z-index: -1;
+  border-radius: 9999px;
+  filter: blur(72px);
+  pointer-events: none;
+  will-change: transform;
+}
+.landing-aurora-a {
+  width: 36rem;
+  height: 27rem;
+  top: -9rem;
+  right: -7rem;
+  opacity: 0.5;
+  background: radial-gradient(circle at 32% 34%, #6B7BF0, transparent 68%);
+  animation: aurora-drift 19s ease-in-out infinite alternate;
+}
+.landing-aurora-b {
+  width: 31rem;
+  height: 24rem;
+  bottom: -9rem;
+  left: -8rem;
+  opacity: 0.32;
+  background: radial-gradient(circle at 58% 42%, #12A594, transparent 70%);
+  animation: aurora-drift 25s -7s ease-in-out infinite alternate-reverse;
+}
+@keyframes aurora-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-2.5rem, 1.75rem, 0) scale(1.09); }
+}
+
+/* Frosted panel used by the hero's cards, so they sit on the aurora instead of blocking it out. */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  /* Standard property only: the build adds the -webkit- prefix per browser targets. Writing both
+     makes it drop the unprefixed one, which costs Firefox the frosted effect entirely. */
+  backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 2px rgba(30, 34, 51, 0.04), 0 12px 28px -14px rgba(30, 34, 51, 0.22);
+}
+
+/* Both prefixes: without -webkit- the subject strip ends in a hard cut, not a fade. */
+.marquee-fade {
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-aurora { animation: none; }
 }
 
 /* Scroll reveal. Content only starts hidden once JS marks the page ready, so it never disappears without JS. */

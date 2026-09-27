@@ -148,20 +148,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     <div ref={rootRef}>
       {/* Hero band. Its background blends the three looks: confetti (1–5), graph paper (6–10), formulas (11–12). */}
       <section className="landing-hero relative overflow-hidden">
-        <span aria-hidden="true" className="landing-mix-left" />
-        <span aria-hidden="true" className="landing-mix-right" />
+        <span aria-hidden="true" className="landing-aurora landing-aurora-a" />
+        <span aria-hidden="true" className="landing-aurora landing-aurora-b" />
         <div className={`${WRAP} relative pt-10 sm:pt-16 pb-10 grid lg:grid-cols-[1.1fr_1fr] gap-12 items-center`}>
           <div className="flex flex-col gap-4 sm:gap-5">
-            <span className="animate-fade-up self-start inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border-2 border-[#A9E6D3] text-[11px] font-extrabold tracking-[0.08em] text-[#0B7A67]">
-              <span className="w-2 h-2 rounded-full bg-[#12A594] animate-pulse" /> CLASS 1–12 · GROWS WITH YOU
+            <span className="glass-panel animate-fade-up self-start inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold tracking-[0.08em] text-[#4B5168]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#12A594] animate-pulse" /> CLASS 1–12 · GROWS WITH YOU
             </span>
             <h1 className="animate-fade-up [animation-delay:80ms] text-[40px] sm:text-[58px] leading-[1.05] text-[#1E2233] text-balance">
               Every chapter,{' '}
-              <span className="relative inline-block text-[#3B4FE0]">
+              <span className="relative inline-block bg-gradient-to-r from-[#3B4FE0] via-[#6B7BF0] to-[#12A594] bg-clip-text text-transparent">
                 explained simply.
-                <svg aria-hidden="true" viewBox="0 0 300 16" preserveAspectRatio="none" className="absolute left-0 -bottom-2 w-full h-3.5">
-                  <path d="M4 11C60 3 120 3 176 8S264 13 296 5" fill="none" stroke="#FFC53D" strokeWidth="6" strokeLinecap="round" className="animate-draw" />
-                </svg>
+                <span
+                  aria-hidden="true"
+                  className="absolute left-0 -bottom-1 h-[6px] w-full rounded-full bg-gradient-to-r from-[#3B4FE0]/45 via-[#6B7BF0]/35 to-transparent"
+                />
               </span>
             </h1>
             <p className="animate-fade-up [animation-delay:160ms] text-[15.5px] font-semibold leading-relaxed text-[#4B5168] max-w-[520px]">
@@ -180,14 +181,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <dl className="animate-fade-up [animation-delay:320ms] grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 max-w-[560px]">
                 {(
                   [
-                    [<CountUp key="l" to={stats.lessons} />, 'LESSONS', '#12A594'],
-                    [<CountUp key="c" to={classes.length} />, 'CLASSES', '#3B4FE0'],
-                    [<CountUp key="s" to={stats.subjects} />, 'SUBJECTS', '#7A5BE0'],
-                    ['Free', 'TO START', '#C98A0E'],
-                  ] as [React.ReactNode, string, string][]
-                ).map(([value, label, color]) => (
-                  <div key={label} className="flex flex-col px-3.5 py-2.5 rounded-[18px] bg-white border-2 border-[#EDEFF6] shadow-[0_4px_0_#EDEFF6]">
-                    <dd className="font-display text-[24px] leading-tight tabular-nums" style={{ color }}>
+                    [<CountUp key="l" to={stats.lessons} />, 'LESSONS'],
+                    [<CountUp key="c" to={classes.length} />, 'CLASSES'],
+                    [<CountUp key="s" to={stats.subjects} />, 'SUBJECTS'],
+                    ['Free', 'TO START'],
+                  ] as [React.ReactNode, string][]
+                ).map(([value, label]) => (
+                  <div
+                    key={label}
+                    className="glass-panel flex flex-col px-4 py-3 rounded-2xl transition-transform duration-300 hover:-translate-y-0.5"
+                  >
+                    <dd className="font-display text-[25px] leading-tight tabular-nums text-[#1E2233]">
                       {value}
                     </dd>
                     <dt className="text-[10.5px] font-extrabold tracking-[0.06em] text-[#6B7280]">{label}</dt>
@@ -207,14 +211,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div
             aria-label="Subjects covered"
             role="region"
-            className="marquee relative overflow-hidden pb-12 [mask-image:linear-gradient(90deg,transparent,black_8%,black_92%,transparent)]"
+            className="marquee marquee-fade relative overflow-hidden pb-14"
           >
             <ul className="flex w-max gap-3 animate-marquee">
               {[...stats.subjectNames, ...stats.subjectNames].map((name, i) => (
                 <li
                   key={`${name}-${i}`}
                   aria-hidden={i >= stats.subjectNames.length || undefined}
-                  className="flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl bg-white border-2 border-[#EDEFF6] whitespace-nowrap"
+                  className="flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl bg-white/80 border border-white/90 shadow-[0_1px_2px_rgba(30,34,51,0.05)] whitespace-nowrap"
                 >
                   <SubjectGlyph subject={name} className="w-8 h-8 rounded-[11px]" />
                   <span className="text-[13px] font-extrabold text-[#1E2233]">{name}</span>
@@ -224,9 +228,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         )}
 
-        <svg aria-hidden="true" viewBox="0 0 1440 60" preserveAspectRatio="none" className="relative block w-full h-10 sm:h-14 text-white">
-          <path d="M0 38C240 8 480 0 720 22S1200 62 1440 30V60H0Z" fill="currentColor" />
-        </svg>
       </section>
 
       {/* One app, three looks: editorial rows, each with a live preview and a real jump-in link. */}

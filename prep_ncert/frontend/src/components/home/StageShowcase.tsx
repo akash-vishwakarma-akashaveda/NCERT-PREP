@@ -157,10 +157,9 @@ export const StageShowcase: React.FC<{ videos: Video[] }> = ({ videos }) => {
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
     >
-      <span aria-hidden="true" className="absolute -top-6 right-0 w-52 h-52 rounded-full bg-[#FFC53D]/30 blur-2xl animate-float" />
-      <span aria-hidden="true" className="absolute -bottom-6 left-0 w-52 h-52 rounded-full bg-[#12A594]/20 blur-2xl animate-float [animation-delay:-4s]" />
+      <span aria-hidden="true" className="absolute -inset-4 -z-10 rounded-[32px] bg-gradient-to-br from-[#3B4FE0]/12 via-transparent to-[#12A594]/10 blur-2xl" />
 
-      <div role="tablist" aria-label="See the app for each age group" className="relative grid grid-cols-3 gap-1.5 p-1.5 rounded-[20px] bg-white border-[3px] border-[#EDEFF6] shadow-[0_5px_0_#EDEFF6]">
+      <div role="tablist" aria-label="See the app for each age group" className="glass-panel relative grid grid-cols-3 gap-1.5 p-1.5 rounded-[18px]">
         {STAGES.map((s, i) => {
           const active = i === index;
           return (
