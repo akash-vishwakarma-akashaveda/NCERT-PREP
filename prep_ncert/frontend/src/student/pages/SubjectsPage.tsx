@@ -55,7 +55,12 @@ export const SubjectsPage: React.FC = () => {
     <div className="space-y-6">
       <PageHeader section="subjects" title="My subjects" description={`${classLabel(course.classSort)} · ${course.subjects.length} subjects`} />
       {course.subjects.length === 0 ? (
-        <EmptyState icon={<BookOpen className="w-6 h-6" />} title="No subjects yet" body="Lessons for your class haven't been published yet." />
+        <EmptyState
+          icon={<BookOpen className="w-6 h-6" />}
+          title="Lessons coming soon"
+          body="Lessons for your class are being added. Chapter PDFs may already be there under Textbooks."
+          action={<Link to="/app/textbooks" className={btnPrimary}>Open textbooks</Link>}
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5">
           {course.subjects.map((s) => (

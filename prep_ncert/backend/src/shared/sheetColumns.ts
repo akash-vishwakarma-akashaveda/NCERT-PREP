@@ -15,6 +15,7 @@ const COLUMN_MAP: Record<string, keyof SheetRow> = {
 
 const OPTIONAL_COLUMN_MAP: Record<string, string> = {
   'yt vid published': 'published_raw',
+  'yt vid url': 'yt_url',
   url: 'pdf_url',
   timestamps: 'timestamps',
   'english chapter name': 'english_chapter_name',
@@ -22,6 +23,17 @@ const OPTIONAL_COLUMN_MAP: Record<string, string> = {
 
 function normaliseHeader(header: unknown): string {
   return String(header ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
+
+/** "https://youtu.be/ID", "https://www.youtube.com/watch?v=ID", or "NA" when there is no video. */
+function youtubeIdFromUrl(url: string | undefined): string {
+  if (!url) return '';
+  const candidate = url.includes('youtu.be/')
+    ? url.split('youtu.be/')[1]?.split(/[?&#/]/)[0]
+    : /[?&]v=([^&#]+)/.exec(url)?.[1];
+  return candidate && YOUTUBE_ID.test(candidate) ? candidate : '';
 }
 
 /**
@@ -53,8 +65,11 @@ export function rowsFromSheetCells(cellRows: unknown[][]): { rows: SheetRow[]; m
     headerIndex.forEach((idx, field) => {
       record[field] = String(dataRow[idx] ?? '').trim();
     });
-    const youtubeId = record.youtube_id;
+    // The id column is blank on some rows that still carry a working video link, so fall back to
+    // the link rather than dropping the lesson (38 of them in the current sheet).
+    const youtubeId = record.youtube_id || youtubeIdFromUrl(record.yt_url);
     if (!youtubeId) continue;
+    record.youtube_id = youtubeId;
     if (!byId.has(youtubeId)) order.push(youtubeId);
     byId.set(youtubeId, record); // last duplicate row wins
   }
@@ -73,7 +88,12 @@ export function rowsFromSheetCells(cellRows: unknown[][]): { rows: SheetRow[]; m
       pdf_url: record.pdf_url,
       timestamps: record.timestamps,
     };
-    if (record.published_raw !== undefined) row.yt_public = /^PUBLISH_OK/i.test(record.published_raw);
+    // "YT Vid Published" goes stale: rows sit at "N" long after the video is live on YouTube (372
+    // of them here, all public when checked). A usable video link is the reliable signal, so treat
+    // the lesson as published whenever there is one, and only consult the column when there isn't.
+    if (record.published_raw !== undefined) {
+      row.yt_public = Boolean(row.youtube_id) || /^PUBLISH_OK/i.test(record.published_raw);
+    }
     return row;
   });
 

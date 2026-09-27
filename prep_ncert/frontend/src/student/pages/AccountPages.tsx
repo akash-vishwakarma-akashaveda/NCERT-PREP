@@ -18,6 +18,7 @@ import { FOCUS_MODE_STYLE as MODE_STYLE } from '../../components/pomodoro/Floati
 import { tintVars } from '../stage';
 import { EmptyState, PageHeader, ProgressBar, SubjectCover, btnPrimary, btnSecondary, card, lessonPath } from '../ui';
 import { youtubeThumbnail } from '../../services/youtubeApi';
+import { COMING_SOON_NOTE, DOUBTS_COMING_SOON } from '../../data/featureFlags';
 
 export const DoubtsPage: React.FC = () => {
   const { isAdmin } = useAuth();
@@ -30,8 +31,19 @@ export const DoubtsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader section="doubts" title="Doubts" description="Questions you asked under lessons. Only you and your educator can see them." />
-      {myDoubts.length === 0 ? (
+      <PageHeader
+        section="doubts"
+        title="Doubts"
+        description={DOUBTS_COMING_SOON ? 'Ask an educator about anything you are stuck on.' : 'Questions you asked under lessons. Only you and your educator can see them.'}
+      />
+      {DOUBTS_COMING_SOON ? (
+        <EmptyState
+          icon={<MessageCircleQuestion className="w-6 h-6" />}
+          title="Coming soon"
+          body={COMING_SOON_NOTE}
+          action={<Link to="/app/subjects" className={btnPrimary}>Go to my subjects</Link>}
+        />
+      ) : myDoubts.length === 0 ? (
         <EmptyState
           icon={<MessageCircleQuestion className="w-6 h-6" />}
           title="No doubts yet"
