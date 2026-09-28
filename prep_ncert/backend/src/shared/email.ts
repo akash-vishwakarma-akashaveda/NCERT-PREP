@@ -8,9 +8,10 @@ const sesClient = new SESClient({ region: process.env.AWS_REGION ?? 'ap-south-1'
 export async function sendEmail(to: string, subject: string, body: string): Promise<boolean> {
   const from = process.env.SES_FROM_EMAIL;
   if (!from) {
-    // ponytail: no SES_FROM_EMAIL configured (e.g. local dev, SES domain not verified yet) — log instead of failing.
+    // Local dev has no SES: the link is logged so flows can be tested, and counts as sent. In
+    // production an unset sender is a real misconfiguration, so it reports failure to the user.
     logger.warn({ to, subject, body }, '[email] not sent (SES_FROM_EMAIL unset) — logging instead');
-    return false;
+    return process.env.NODE_ENV !== 'production';
   }
 
   try {
