@@ -7,6 +7,7 @@ import { NotesService } from '../services/content';
 import { useAuth } from '../context/AuthContext';
 import { useCatalogContext } from '../context/CatalogContext';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useDashboardConfig } from '../hooks/useDashboardConfig';
 import { SubjectGlyph, btnAccent, btnSecondary, card } from '../student/ui';
 import { Mascot } from '../student/stage';
 import { STAGES, toDisplayTitle } from '../components/home/StageShowcase';
@@ -80,6 +81,9 @@ export const DemoPage: React.FC = () => {
   const [notesKeys, setNotesKeys] = useState<Set<string>>(new Set());
   const [notesTarget, setNotesTarget] = useState<NotesTarget | null>(null);
   const exploreRef = useRef<HTMLElement>(null);
+  // The admin can switch free previews off (Dashboard Control -> access policy); the copy must follow it.
+  const { config } = useDashboardConfig();
+  const previewOn = config?.policy?.freePreviewEnabled !== false;
   const { hash } = useLocation();
 
   useEffect(() => {
@@ -127,7 +131,7 @@ export const DemoPage: React.FC = () => {
       <section className="landing-hero relative text-white">
         <div className={`${WRAP} relative pt-12 sm:pt-16 pb-4 flex flex-col items-center text-center gap-5`}>
           <Sticker bg="#FFC53D" edge="#E0A81F" className="animate-fade-up text-[11.5px] tracking-[0.08em]" rotate={-3}>
-            <Star className="w-3.5 h-3.5 fill-current" /> FREE DEMO · NO SIGN-UP
+            <Star className="w-3.5 h-3.5 fill-current" /> {previewOn ? 'FREE DEMO · NO SIGN-UP' : 'FREE SYLLABUS EXPLORER'}
           </Sticker>
           <h1 className="animate-fade-up [animation-delay:80ms] text-[40px] sm:text-[60px] leading-[1.04] text-balance">
             Press{' '}
@@ -141,7 +145,9 @@ export const DemoPage: React.FC = () => {
             <span className="inline-block px-3 rounded-[18px] bg-[#12A594] border-[3px] border-[#0B7A67] shadow-[0_5px_0_#0B7A67] rotate-[-2deg]">now!</span>
           </h1>
           <p className="animate-fade-up [animation-delay:160ms] text-[16px] font-semibold text-white/85 max-w-xl">
-            Start with a hand-picked lesson, or explore every class and subject below. No account, no email, just watch.
+            {previewOn
+              ? 'Start with a hand-picked lesson, or explore every class and subject below. No account, no email, just watch.'
+              : 'See every class, subject and chapter below. Sign up free whenever you are ready to press play.'}
           </p>
           <div className="flex items-end gap-2" aria-hidden="true">
             <Mascot className="w-16 sm:w-20 animate-bob" />
@@ -150,18 +156,19 @@ export const DemoPage: React.FC = () => {
             </span>
           </div>
         </div>
-        <Wave fill="#FFF8E7" />
+        <Wave fill={videos?.length === 0 ? '#FFFFFF' : '#FFF8E7'} />
       </section>
 
-      {/* ---------- Hand-picked lessons, one block per age look ---------- */}
+      {/* ---------- Hand-picked lessons, one block per age look (hidden when there are none to offer) ---------- */}
+      {videos?.length !== 0 && (
       <section aria-labelledby="picks-title" className="bg-[#FFF8E7]">
         <div className={`${WRAP} pt-4 pb-14 sm:pb-20 space-y-8`}>
           <h2 id="picks-title" className="text-center text-[28px] sm:text-[36px] text-[#1E2233]">
             Start with these
           </h2>
-          {failed || videos?.length === 0 ? (
+          {failed ? (
             <p className={`${card} max-w-xl mx-auto px-6 py-8 text-center text-sm font-semibold text-[#6B7280]`}>
-              {failed ? "The hand-picked lessons couldn't be loaded just now. You can still explore the syllabus below." : 'No hand-picked lessons right now. Explore the syllabus below.'}
+              The hand-picked lessons couldn't be loaded just now. You can still explore the syllabus below.
             </p>
           ) : !videos ? (
             <div className="grid md:grid-cols-3 gap-6">
@@ -201,6 +208,7 @@ export const DemoPage: React.FC = () => {
         </div>
         <Wave fill="#FFFFFF" flip />
       </section>
+      )}
 
       {/* ---------- Explorer: class -> subject -> chapters ---------- */}
       <section id="explore" ref={exploreRef} aria-labelledby="explore-title" className="landing-dots bg-white scroll-mt-20">
@@ -214,7 +222,9 @@ export const DemoPage: React.FC = () => {
             </h2>
             {!user && (
               <p className="text-[14px] font-semibold text-[#4B5168] max-w-xl">
-                Chapter 1 of every subject is free to watch. Locked lessons open with a free account.
+                {previewOn
+                  ? 'Chapter 1 of every subject is free to watch. Locked lessons open with a free account.'
+                  : 'Browse every chapter here, then sign up free to watch any lesson.'}
               </p>
             )}
           </div>
@@ -298,7 +308,7 @@ export const DemoPage: React.FC = () => {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[20px] bg-[#FFF6E2] border-2 border-[#FFD97A]">
                         <p className="flex items-start gap-2.5 text-[13px] font-bold text-[#5E3D0C]">
                           <Lock className="w-4 h-4 mt-0.5 shrink-0" />
-                          Chapter 1 is free to watch. Sign up free to unlock all {activeSubject.chapters.length} chapters, notes and progress saving.
+                          {previewOn ? 'Chapter 1 is free to watch. ' : ''}Sign up free to unlock all {activeSubject.chapters.length} chapters, notes and progress saving.
                         </p>
                         <button onClick={() => setAuthModalOpen(true)} className={`${btnAccent} px-4 py-2 text-[13px] shrink-0`}>
                           Unlock everything free
