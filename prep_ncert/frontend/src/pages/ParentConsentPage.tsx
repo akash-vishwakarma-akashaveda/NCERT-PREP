@@ -5,6 +5,7 @@ import { api } from '../services/api/client';
 import { useAuth } from '../context/AuthContext';
 import { NoticeView } from '../components/consent/ConsentGate';
 import { NoticeLang } from '../data/privacyNotice';
+import { useConfirm } from './admin/adminUi';
 
 interface RequestInfo {
   childName: string;
@@ -34,6 +35,7 @@ export const ParentConsentPage: React.FC = () => {
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { confirm, confirmNode } = useConfirm();
 
   useEffect(() => {
     api
@@ -43,7 +45,7 @@ export const ParentConsentPage: React.FC = () => {
   }, [token]);
 
   const decide = async (decision: 'approve' | 'refuse') => {
-    if (decision === 'refuse' && !window.confirm(`Refuse and delete ${req?.childName}'s account and data?`)) return;
+    if (decision === 'refuse' && !(await confirm(`Refuse and delete ${req?.childName}'s account and data?`, 'Refuse and delete'))) return;
     setBusy(true);
     setError(null);
     try {
@@ -147,6 +149,7 @@ export const ParentConsentPage: React.FC = () => {
         </>
       )}
       {!req && !error && <div className="h-40 rounded-[22px] skeleton-shimmer" aria-label="Loading" />}
+      {confirmNode}
     </div>
   );
 };

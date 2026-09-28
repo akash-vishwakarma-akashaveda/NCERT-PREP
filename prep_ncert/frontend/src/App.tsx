@@ -16,6 +16,7 @@ import { DemoPage } from './pages/DemoPage';
 import { BrowsePage } from './pages/BrowsePage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { ParentConsentPage } from './pages/ParentConsentPage';
+import { ResetPasswordPage, VerifyEmailPage } from './pages/EmailLinkPages';
 import { StudentLayout } from './student/StudentLayout';
 import { HomePage } from './student/pages/HomePage';
 import { SubjectDetailPage, SubjectsPage } from './student/pages/SubjectsPage';
@@ -26,6 +27,7 @@ import { TextbooksPage } from './student/pages/TextbooksPage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 type PublicTab = 'home' | 'browse' | 'profile' | 'privacy';
+const OPEN_WHEN_SIGNED_IN = ['/privacy', '/browse', '/parent-consent', '/verify-email', '/reset-password'];
 const PUBLIC_PATHS: Partial<Record<PublicTab, string>> = { home: '/', browse: '/browse', privacy: '/privacy', profile: '/app' };
 
 // Visitor pages: landing, syllabus explorer, privacy, public lesson view.
@@ -37,8 +39,9 @@ const PublicLayout: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
 
   // Signed-in users live in /app; privacy and syllabus browser stay readable for all.
-  // /parent-consent stays open: a parent signs in there to approve their child's account.
-  if (!loading && user && pathname !== '/privacy' && pathname !== '/browse' && pathname !== '/parent-consent') {
+  // /parent-consent stays open: a parent signs in there to approve their child's account; so do the
+  // email-link pages, which a signed-in user reaches from their inbox.
+  if (!loading && user && !OPEN_WHEN_SIGNED_IN.includes(pathname)) {
     const lesson = pathname.match(/^\/watch\/(.+)$/);
     return <Navigate to={lesson ? `/app/lesson/${lesson[1]}` : '/app'} replace />;
   }
@@ -136,6 +139,8 @@ export const App: React.FC = () => (
                 <Route path="/demo" element={<DemoPage />} />
                 <Route path="/privacy" element={<PrivacyRoute />} />
                 <Route path="/parent-consent" element={<ParentConsentPage />} />
+                <Route path="/verify-email" element={<VerifyEmailPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/watch/:videoId" element={<LessonPage publicMode />} />
               </Route>
 

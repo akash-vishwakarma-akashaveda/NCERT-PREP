@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request } from 'express';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
 import type { Server } from 'socket.io';
@@ -9,6 +9,11 @@ import { bumpStat } from '../shared/stats.js';
 
 const router = Router();
 router.use(requireAuth);
+
+/** Any change after creation: admins' lists and badge counts, and the owning student's list, refresh live. */
+function emitDoubtUpdated(req: Request, ownerId: string, doubt: ReturnType<typeof toPublicDoubt>) {
+  (req.app.get('io') as Server | undefined)?.to('admins').to(ownerId).emit('doubt:updated', doubt);
+}
 
 router.get('/mine', async (req, res) => {
   const rows = await prisma.doubt.findMany({ where: { userId: req.user!.userId }, orderBy: { createdAt: 'desc' }, take: 100 });
@@ -82,6 +87,7 @@ router.post('/:id/answer', requireAdmin, async (req, res) => {
   });
   const publicDoubt = toPublicDoubt(doubt);
   (req.app.get('io') as Server | undefined)?.to(doubt.userId).emit('doubt:answered', publicDoubt);
+  emitDoubtUpdated(req, doubt.userId, publicDoubt);
   res.json(publicDoubt);
 });
 
@@ -101,7 +107,9 @@ router.patch('/:id', async (req, res) => {
     data: { status: parsed.data.status.toUpperCase() as 'OPEN' | 'ANSWERED' | 'CLOSED', studentUnread: false },
     include: { user: { select: { displayName: true, email: true } } },
   });
-  res.json(toPublicDoubt(doubt));
+  const publicDoubt = toPublicDoubt(doubt);
+  emitDoubtUpdated(req, doubt.userId, publicDoubt);
+  res.json(publicDoubt);
 });
 
 router.post('/:id/read', async (req, res) => {

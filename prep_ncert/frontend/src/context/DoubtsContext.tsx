@@ -45,12 +45,16 @@ export const DoubtsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         actionUrl: `/app/lesson/${encodeURIComponent(updated.youtube_id)}`,
       });
     };
+    // Status changes (closed by an educator, etc.) — refresh the row quietly, no toast.
+    const onUpdated = (updated: Doubt) => setMyDoubts((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
     socket.on('doubt:answered', onAnswered);
+    socket.on('doubt:updated', onUpdated);
     socket.connect();
 
     return () => {
       cancelled = true;
       socket.off('doubt:answered', onAnswered);
+      socket.off('doubt:updated', onUpdated);
       socket.disconnect();
     };
   }, [user?.userId]); // eslint-disable-line react-hooks/exhaustive-deps

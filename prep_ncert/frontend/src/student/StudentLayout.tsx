@@ -141,22 +141,25 @@ export const StudentLayout: React.FC = () => {
     const onLocal = () => loadCounts();
     window.addEventListener('quickprep-local-change', onLocal);
     window.addEventListener('storage', onLocal);
+    // Live badge counts: any doubt or feedback change anywhere re-reads them.
+    const socket = getSocket();
+    const liveEvents = ['doubt:new', 'doubt:updated', 'feedback:changed'];
+    liveEvents.forEach((e) => socket.on(e, onLocal));
     return () => {
       active = false;
       window.removeEventListener('quickprep-local-change', onLocal);
       window.removeEventListener('storage', onLocal);
+      liveEvents.forEach((e) => socket.off(e, onLocal));
     };
   }, [isUserAdmin]);
 
-  // Live "new doubt" alert for admins — the backend already emits this to the "admins" room;
-  // nothing was listening for it before, so admins only found out on their next manual refresh.
+  // Live "new doubt" toast for admins (the badge count is refreshed by the effect above).
   // DoubtsProvider owns the socket's connect/disconnect lifecycle for any signed-in user
   // (admins included); this only attaches a listener to that already-managed connection.
   useEffect(() => {
     if (!isUserAdmin) return;
     const socket = getSocket();
     const onNewDoubt = (doubt: Doubt) => {
-      setAdminOpenDoubts((n) => n + 1);
       pushToast({
         title: 'New student doubt',
         message: `${doubt.userName || 'A student'} asked: "${doubt.question.slice(0, 90)}${doubt.question.length > 90 ? '…' : ''}"`,
@@ -197,11 +200,6 @@ export const StudentLayout: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  if (loading && !user) {
-    return <div className="min-h-screen flex items-center justify-center text-sm text-[#6B7280]">Loading…</div>;
-  }
-  if (!user) return <Navigate to="/" replace />;
-
   const toggleCollapsed = () =>
     setCollapsed((c) => {
       try {
@@ -234,6 +232,14 @@ export const StudentLayout: React.FC = () => {
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [profileMenuOpen]);
+
+  // Early returns only after every hook above: returning before one of them changed the hook count
+  // between renders (loading -> signed in on refresh, signed in -> null on logout / log out of all
+  // devices), which React treats as a crash and the ErrorBoundary showed "Something went wrong".
+  if (loading && !user) {
+    return <div className="min-h-screen flex items-center justify-center text-sm text-[#6B7280]">Loading…</div>;
+  }
+  if (!user) return <Navigate to="/" replace />;
 
   const classVideos = user.grade_preference && !isUserAdmin
     ? activeVideos.filter((v) => v.class_sort === user.grade_preference)
@@ -307,7 +313,8 @@ export const StudentLayout: React.FC = () => {
         (dark ? (
           <span className="flex flex-col leading-tight">
             <span className="font-display text-[15px] text-white">Admin</span>
-            <span className="text-[10px] font-bold text-[#8A90A8]">Console</span>
+            {/* Read from auth state, so a rename on the profile page shows here immediately. */}
+            <span className="text-[10px] font-bold text-[#8A90A8] truncate max-w-[150px]">{user.displayName || 'Console'}</span>
           </span>
         ) : (
           <span className="font-display text-[19px] whitespace-nowrap">
@@ -567,7 +574,7 @@ export const StudentLayout: React.FC = () => {
                   className={`${card} absolute right-0 top-[calc(100%+10px)] z-50 w-56 p-1.5 animate-pop-soft`}
                 >
                   <div className="px-3 py-2 border-b-2 border-[color:var(--card-line)] mb-1.5">
-                    <p className="text-[13px] font-extrabold text-[#1E2233] truncate">{user.displayName || 'Student'}</p>
+                    <p className="text-[13px] font-extrabold text-[#1E2233] truncate">{user.displayName || (isUserAdmin ? 'Educator' : 'Student')}</p>
                     <p className="text-[11px] font-semibold text-[#6B7280] truncate">{user.email}</p>
                   </div>
                   <NavLink

@@ -4,7 +4,9 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 const region = process.env.AWS_REGION ?? 'ap-south-1';
 const bucket = process.env.S3_NOTES_BUCKET;
 
-const s3 = new S3Client({ region });
+// WHEN_REQUIRED: since SDK 3.729 the default signs a CRC32 of the (empty) body into every
+// pre-signed PUT URL, so S3 rejects the browser's real upload of the file.
+const s3 = new S3Client({ region, requestChecksumCalculation: 'WHEN_REQUIRED' });
 
 export function isS3Configured(): boolean {
   return Boolean(bucket);

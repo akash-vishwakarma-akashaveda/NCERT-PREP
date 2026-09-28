@@ -112,7 +112,7 @@ export const NotesService = {
         if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100));
       };
       xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed (${xhr.status})`)));
-      xhr.onerror = () => reject(new Error('Upload failed'));
+      xhr.onerror = () => reject(new Error('Upload failed: file storage refused the connection (check the bucket CORS rule, guide Phase 10.3).'));
       xhr.send(file);
     });
 

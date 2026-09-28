@@ -119,7 +119,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ onSuccess, isModal = true 
   };
 
   const content = (
-    <div className="relative w-full max-w-[440px] max-h-[92vh] overflow-y-auto bg-white rounded-[32px] border-[3px] border-[color:var(--card-line)] shadow-[0_8px_0_#E3E5EC] p-6 sm:p-[30px] flex flex-col gap-4 animate-pop-soft">
+    <div className="relative w-full max-w-[440px] bg-white rounded-[32px] border-[3px] border-[color:var(--card-line)] shadow-[0_8px_0_#E3E5EC] p-6 sm:p-[30px] flex flex-col gap-4 animate-pop-soft">
       {isModal && (
         <button
           onClick={close}
@@ -260,8 +260,10 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ onSuccess, isModal = true 
   if (!isModal) return <div className="flex justify-center p-4">{content}</div>;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1E2233]/50 backdrop-blur-xs" role="dialog" aria-modal="true" aria-label="Sign in" onClick={close}>
-      <div className="w-full max-w-[440px]" onClick={(e) => e.stopPropagation()}>
+    // The overlay scrolls, not the card: a scrollbar inside the rounded card poked out past its
+    // corners on the taller sign-up form. my-auto keeps short forms centred.
+    <div className="fixed inset-0 z-50 flex overflow-y-auto p-4 bg-[#1E2233]/50 backdrop-blur-xs" role="dialog" aria-modal="true" aria-label="Sign in" onClick={close}>
+      <div className="w-full max-w-[440px] m-auto" onClick={(e) => e.stopPropagation()}>
         {content}
       </div>
     </div>

@@ -1,9 +1,9 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Plus, Search, Eye, Edit2, Trash2, CheckCircle2, AlertTriangle, Play, PlaySquare, Upload } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, Trash2, Play, PlaySquare, Upload } from 'lucide-react';
 import { Video } from '../../types';
 import { VideoService } from '../../services/videos';
 import { AdminClassNode } from './adminTree';
-import { Card, EmptyState, Modal, Notify, SectionHeader, inputClass, primaryButton, secondaryButton } from './adminUi';
+import { Card, EmptyState, Modal, Notify, SectionHeader, Toggle, inputClass, primaryButton, secondaryButton, useConfirm } from './adminUi';
 
 interface VideosSectionProps {
   videos: Video[];
@@ -46,6 +46,7 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
   const [uploadingExcel, setUploadingExcel] = useState(false);
   const excelInputRef = useRef<HTMLInputElement>(null);
   const [page, setPage] = useState(1);
+  const { confirm, confirmNode } = useConfirm();
   const PAGE_SIZE = 50;
 
   const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,7 +163,7 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
   };
 
   const remove = async (video: Video) => {
-    if (!window.confirm(`Delete "${video.video_title}"? Students' history keeps a "No longer available" entry.`)) return;
+    if (!(await confirm(`Delete "${video.video_title}"? Students' history keeps a "No longer available" entry.`))) return;
     try {
       await VideoService.deleteVideo(video.youtube_id);
       await onRefreshCatalog();
@@ -283,16 +284,10 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap font-mono text-[11px]">{v.youtube_id}</td>
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <button
-                        onClick={() => toggleActive(v)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold cursor-pointer ${
-                          v.isActive ? 'bg-[#E7F7F1] text-[#0B7A67]' : 'bg-[#FFDCD0] text-[#8A2E17]'
-                        }`}
-                        title="Toggle visibility"
-                      >
-                        {v.isActive ? <CheckCircle2 className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                        {v.isActive ? 'Visible' : 'Hidden'}
-                      </button>
+                      <label className="inline-flex items-center gap-2 text-[11px] font-extrabold align-middle">
+                        <Toggle checked={v.isActive} onChange={() => toggleActive(v)} label={`Visible to students: ${v.video_title}`} />
+                        <span className={v.isActive ? 'text-[#0B7A67]' : 'text-[#8A2E17]'}>{v.isActive ? 'Visible' : 'Hidden'}</span>
+                      </label>
                       {v.yt_public === false && (
                         <span className="ml-1.5 inline-flex px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#F1F3FB] text-[#6B7280]" title="Sheet says the YouTube upload is not public yet. Students can't see it until the sheet shows PUBLISH_OK.">
                           Not public yet
@@ -308,7 +303,8 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
                           setEditingId(v.youtube_id);
                           setForm(v);
                         }}
-                        aria-label="Edit"
+                        aria-label={SHEET_MANAGED ? 'Video settings' : 'Edit'}
+                        title={SHEET_MANAGED ? 'Visibility & PYQs (details come from the Google Sheet)' : 'Edit'}
                         className="p-1.5 text-slate-600 hover:text-[#12A594] rounded-xl cursor-pointer"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -354,8 +350,12 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
 
       {form && (
         <Modal
-          title={editingId ? 'Edit video' : 'Add video'}
-          subtitle={SHEET_MANAGED ? 'Content comes from the Google Sheet. Change it there and sync; visibility and PYQs are set here.' : undefined}
+          title={SHEET_MANAGED ? 'Video settings' : editingId ? 'Edit video' : 'Add video'}
+          subtitle={
+            SHEET_MANAGED
+              ? 'The greyed-out details are read-only here: the Google Sheet owns them and every sync would overwrite a change made here. Edit them in the sheet, then run the sync (or Upload Excel). Visibility and PYQs below are yours to change.'
+              : undefined
+          }
           onClose={() => setForm(null)}
         >
           <form onSubmit={save} className="space-y-4">
@@ -441,12 +441,12 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
               </a>
             )}
             <div className="flex flex-wrap items-center gap-5 pt-2 border-t border-[#E3E5EC]">
-              <label className="flex items-center gap-2 text-xs font-extrabold cursor-pointer">
-                <input type="checkbox" checked={Boolean(form.isActive)} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />
+              <label className="flex items-center gap-2 text-xs font-extrabold">
+                <Toggle checked={Boolean(form.isActive)} onChange={(v) => setForm({ ...form, isActive: v })} label="Visible to students" />
                 Visible to students
               </label>
-              <label className="flex items-center gap-2 text-xs font-extrabold cursor-pointer">
-                <input type="checkbox" checked={Boolean(form.pyq_available)} onChange={(e) => setForm({ ...form, pyq_available: e.target.checked })} />
+              <label className="flex items-center gap-2 text-xs font-extrabold">
+                <Toggle checked={Boolean(form.pyq_available)} onChange={(v) => setForm({ ...form, pyq_available: v })} label="Includes PYQs" />
                 Includes PYQs
               </label>
             </div>
@@ -489,6 +489,7 @@ export const VideosSection: React.FC<VideosSectionProps> = ({ videos, tree, onRe
           </div>
         </Modal>
       )}
+      {confirmNode}
     </div>
   );
 };

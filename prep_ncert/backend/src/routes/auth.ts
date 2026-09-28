@@ -14,8 +14,21 @@ import { generateReferralCode } from '../shared/referral.js';
 const router = Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// ponytail: in-memory per-instance limiter is enough for one server; move to a shared store if this ever runs behind more than one instance.
-router.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false }));
+// Only on the credential/email endpoints. It used to wrap the whole router, so the /me check every
+// page load makes (plus logout) burned the budget and signed-in users got 429s after a few
+// refreshes; a school sharing one IP hit it even sooner.
+// ponytail: in-memory per-instance limiters are enough for one server; move to a shared store if this ever runs behind more than one instance.
+const limiterOptions = {
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts. Wait a few minutes and try again.' },
+} as const;
+/** Sign-in style endpoints: only failed attempts count, so brute force is capped but real users never are. */
+const authLimiter = rateLimit({ ...limiterOptions, skipSuccessfulRequests: true });
+/** Endpoints that send an email or create an account: every call counts, so they can't be used to spam. */
+const emailLimiter = rateLimit(limiterOptions);
 
 function sendVerifyEmail(userId: string, email: string) {
   const verifyToken = jwt.sign({ userId, purpose: 'verify-email' }, process.env.SESSION_SECRET!, { expiresIn: '1d' });
@@ -26,7 +39,7 @@ function sendVerifyEmail(userId: string, email: string) {
   );
 }
 
-router.post('/google', async (req, res) => {
+router.post('/google', authLimiter, async (req, res) => {
   const { accessToken } = req.body as { accessToken?: string };
   if (!accessToken) return res.status(400).json({ error: 'accessToken required' });
 
@@ -75,7 +88,7 @@ const registerSchema = z.object({
   referralCode: z.string().trim().max(20).optional(),
 });
 
-router.post('/register', async (req, res) => {
+router.post('/register', emailLimiter, async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const { email, password, displayName, classGrade, referralCode } = parsed.data;
@@ -96,6 +109,8 @@ router.post('/register', async (req, res) => {
   });
   void bumpStat('registrations');
 
+  // sendEmail never throws: the account exists now, so a mail failure must not turn this into a 500
+  // (the retry would then hit "Email already registered"). They can resend from the app.
   await sendVerifyEmail(user.id, email);
 
   setSessionCookie(res, { userId: user.id, role: user.role, sessionVersion: user.sessionVersion });
@@ -104,7 +119,7 @@ router.post('/register', async (req, res) => {
 
 const loginSchema = z.object({ email: z.string().email(), password: z.string() });
 
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const { email, password } = parsed.data;
@@ -117,15 +132,17 @@ router.post('/login', async (req, res) => {
   res.json(toPublicUser(user));
 });
 
-router.post('/resend-verification', requireAuth, async (req, res) => {
+router.post('/resend-verification', emailLimiter, requireAuth, async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
   if (!user) return res.status(404).json({ error: 'Not found' });
   if (user.emailVerified) return res.json({ ok: true });
-  await sendVerifyEmail(user.id, user.email);
+  if (!(await sendVerifyEmail(user.id, user.email))) {
+    return res.status(502).json({ error: 'We could not send the email right now. Please try again later.' });
+  }
   res.json({ ok: true });
 });
 
-router.post('/verify-email', async (req, res) => {
+router.post('/verify-email', authLimiter, async (req, res) => {
   const { token } = req.body as { token?: string };
   if (!token) return res.status(400).json({ error: 'token required' });
   try {
@@ -140,7 +157,7 @@ router.post('/verify-email', async (req, res) => {
 
 const forgotPasswordSchema = z.object({ email: z.string().email() });
 
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', emailLimiter, async (req, res) => {
   const parsed = forgotPasswordSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const { email } = parsed.data;
@@ -164,7 +181,7 @@ router.post('/forgot-password', async (req, res) => {
 
 const resetPasswordSchema = z.object({ token: z.string(), password: z.string().min(8) });
 
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', authLimiter, async (req, res) => {
   const parsed = resetPasswordSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const { token, password } = parsed.data;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AlertCircle, CheckCircle2, Clock, Mail, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { NOTICE, NoticeLang } from '../../data/privacyNotice';
+import { useConfirm } from '../../pages/admin/adminUi';
 
 export const NoticeView: React.FC<{ lang: NoticeLang; onLang?: (l: NoticeLang) => void; compact?: boolean }> = ({ lang, onLang, compact }) => {
   const n = NOTICE[lang];
@@ -94,6 +95,7 @@ export const ConsentGate: React.FC<{ children: React.ReactNode }> = ({ children 
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [changing, setChanging] = useState(false);
+  const { confirm, confirmNode } = useConfirm();
 
   if (!user) return null;
   if (emailVerified && user.consent?.status === 'granted') return <>{children}</>;
@@ -110,8 +112,8 @@ export const ConsentGate: React.FC<{ children: React.ReactNode }> = ({ children 
       setBusy(false);
     }
   };
-  const decline = () =>
-    window.confirm('Delete this account and everything linked to it? You can register again later.') &&
+  const decline = async () =>
+    (await confirm('Delete this account and everything linked to it? You can register again later.')) &&
     run(async () => {
       try {
         await deleteAccount();
@@ -127,6 +129,7 @@ export const ConsentGate: React.FC<{ children: React.ReactNode }> = ({ children 
     <div className="flex flex-wrap items-center gap-1 pt-1 border-t-2 border-[color:var(--card-line)]">
       <button onClick={() => run(signOut)} className={quiet}>Sign out</button>
       <button onClick={decline} className={`${quiet} hover:text-[#C24A2C]`}>Delete this account</button>
+      {confirmNode}
     </div>
   );
   const alerts = (

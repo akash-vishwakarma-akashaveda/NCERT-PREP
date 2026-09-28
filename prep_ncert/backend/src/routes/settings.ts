@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { Server } from 'socket.io';
 import { prisma } from '../db.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
@@ -18,6 +19,8 @@ router.put('/:key', requireAuth, requireAdmin, async (req, res) => {
     create: { key: req.params.key, value: req.body },
     update: { value: req.body },
   });
+  // Every connected client, so announcements / spotlight / access policy reach open dashboards live.
+  (req.app.get('io') as Server | undefined)?.emit('settings:changed', req.params.key);
   res.json(row.value);
 });
 

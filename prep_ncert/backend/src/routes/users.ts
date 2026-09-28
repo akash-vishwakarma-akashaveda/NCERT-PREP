@@ -176,11 +176,12 @@ router.post('/me/consent/parent-request', async (req, res) => {
     }),
   ]);
 
-  await sendEmail(
+  const sent = await sendEmail(
     parentEmail,
     'Approve your child’s NCERT Prep account',
     `${process.env.FRONTEND_ORIGIN}/parent-consent?token=${token}`,
   );
+  if (!sent) return res.status(502).json({ error: 'We could not send the email to your parent right now. Please try again later.' });
 
   res.json({ parentEmail });
 });

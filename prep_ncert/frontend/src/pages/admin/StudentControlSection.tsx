@@ -254,8 +254,9 @@ export const StudentControlSection: React.FC<StudentControlSectionProps> = ({
         title="Student Dashboard Control"
         description="Directly manage live announcements, spotlight revision lessons, and access rules that shape the student dashboard experience."
         actions={
+          // /app is this admin console for an admin account, so the student-facing view is /browse.
           <a
-            href="/app"
+            href="/browse"
             target="_blank"
             rel="noreferrer"
             className={`${secondaryButton} gap-2 text-[#3B4FE0] hover:text-[#2F40BD]`}

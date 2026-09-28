@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
+import type { Server } from 'socket.io';
 import { prisma } from '../db.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
@@ -36,6 +37,7 @@ router.post('/', submitLimiter, async (req, res) => {
   const feedback = await prisma.feedback.create({
     data: { userId: req.user!.userId, youtubeId: parsed.data.youtubeId, message: parsed.data.message.trim() },
   });
+  (req.app.get('io') as Server | undefined)?.to('admins').emit('feedback:changed');
   res.status(201).json(toPublicFeedback(feedback));
 });
 
@@ -52,6 +54,7 @@ router.get('/', requireAdmin, async (req, res) => {
 router.patch('/:id', requireAdmin, async (req, res) => {
   const status = req.body?.status === 'new' ? 'NEW' : 'REVIEWED';
   const feedback = await prisma.feedback.update({ where: { id: req.params.id }, data: { status } });
+  (req.app.get('io') as Server | undefined)?.to('admins').emit('feedback:changed');
   res.json(toPublicFeedback(feedback));
 });
 

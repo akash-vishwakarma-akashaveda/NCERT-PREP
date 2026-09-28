@@ -346,6 +346,22 @@ Everything else in the app works without this. This is the one feature that need
 ```
 3. **Save changes.** Only files under `notes/` are readable by anyone with the link (matching how the note attachments worked before) — nothing else in the bucket is exposed.
 
+### 10.3 Allow the browser to upload (CORS)
+The admin's browser uploads files straight to S3 (a pre-signed PUT), so the bucket must accept requests from the site's origin — without this every upload fails with a bare "Upload failed".
+1. Same bucket → **Permissions** tab → **Cross-origin resource sharing (CORS)** → **Edit**.
+2. Paste this (use your real site origin):
+```json
+[
+  {
+    "AllowedOrigins": ["https://ncert-prep.akashaveda.com"],
+    "AllowedMethods": ["PUT", "GET"],
+    "AllowedHeaders": ["*"],
+    "MaxAgeSeconds": 3000
+  }
+]
+```
+3. **Save changes.**
+
 ---
 
 ## Phase 11 — Amazon SES for real email (optional — without this, emails just get logged instead of sent)
@@ -439,6 +455,7 @@ Note uploads and real emails both start working the moment this is set — no re
 | Google sign-in: "no registered origin" | You skipped Phase 9, or the origin doesn't exactly match (`http` vs `https`, trailing slash) |
 | Emails not arriving | Expected until Phase 11 is fully done (domain verified *and* out of the SES sandbox) — check `pm2 logs prep-ncert-api` for the logged email content instead |
 | Note upload fails with "File storage is not configured yet" | `S3_NOTES_BUCKET` isn't set in `backend/.env` yet — finish Phase 10 and 12 |
+| Note upload fails with just "Upload failed" (no status code) | The bucket's CORS rule (10.3) is missing or its origin doesn't exactly match the site URL |
 | Note upload fails with `403 Forbidden` from S3 | The IAM user's policy (Phase 12) doesn't match your actual bucket name, or the access key in `.env` is wrong/truncated |
 | Uploaded note file gives `403` when a student opens it | The bucket policy (10.2) has the wrong bucket name, or the file wasn't uploaded under the `notes/` prefix |
 | SES: "Email address is not verified" | You're still in the SES sandbox (5) and haven't verified that specific recipient, or production access hasn't been approved yet |

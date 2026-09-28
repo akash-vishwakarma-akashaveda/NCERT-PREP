@@ -16,6 +16,7 @@ import { ChapterNotes, Doubt, Feedback, Video } from '../../types';
 import { CurriculumRecords, DoubtsService, NotesService, countStudentsByClass } from '../../services/content';
 import { FeedbackService } from '../../services/feedback';
 import { useAuth } from '../../context/AuthContext';
+import { getSocket } from '../../services/socket';
 import { buildAdminTree } from './adminTree';
 import { useToast } from './adminUi';
 import { OverviewSection } from './OverviewSection';
@@ -111,6 +112,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     reloadFeedback();
     countStudentsByClass().then(setStudentStats);
   }, [reloadNotes, reloadDoubts, reloadFeedback]);
+
+  // Live lists: the backend emits these to the "admins" room, so new or changed doubts and feedback
+  // show up without a page refresh. DoubtsProvider owns the socket's connect/disconnect.
+  useEffect(() => {
+    const socket = getSocket();
+    const onFeedback = () => void reloadFeedback().catch(() => {});
+    socket.on('doubt:new', reloadDoubts);
+    socket.on('doubt:updated', reloadDoubts);
+    socket.on('feedback:changed', onFeedback);
+    return () => {
+      socket.off('doubt:new', reloadDoubts);
+      socket.off('doubt:updated', reloadDoubts);
+      socket.off('feedback:changed', onFeedback);
+    };
+  }, [reloadDoubts, reloadFeedback]);
 
   const navigate = (next: AdminSectionId, options: AdminNavigateOptions = {}) => {
     setNavOptions(options);
