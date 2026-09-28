@@ -63,7 +63,8 @@ export const StagePreview: React.FC<{ stage: (typeof STAGES)[number]; videos: Vi
     const inClass = videos.filter((v) => v.isActive && v.class_sort === stage.classSort);
     return {
       lesson: inClass[0],
-      subjects: Array.from(new Set(inClass.map((v) => v.subject))).slice(0, compact ? 2 : 3),
+      // Two chips so every stage's preview stays one row tall (a third one wrapped and made the card jump).
+      subjects: Array.from(new Set(inClass.map((v) => v.subject))).slice(0, 2),
     };
   }, [videos, stage.classSort, compact]);
 
@@ -186,10 +187,18 @@ export const StageShowcase: React.FC<{ videos: Video[] }> = ({ videos }) => {
         })}
       </div>
 
-      <div id="stage-preview" role="tabpanel" aria-label={`${stage.label}: ${stage.name}`} className="relative">
-        <div key={stage.id} className="animate-pop-soft">
-          <StagePreview stage={stage} videos={videos} />
-        </div>
+      {/* All three previews share one grid cell, so the panel is always as tall as the tallest one.
+          Swapping only toggles visibility: the card (and the hero around it) never changes height. */}
+      <div id="stage-preview" role="tabpanel" aria-label={`${stage.label}: ${stage.name}`} className="relative grid">
+        {STAGES.map((s, i) => (
+          <div
+            key={s.id}
+            aria-hidden={i !== index || undefined}
+            className={`[grid-area:1/1] [&>*]:h-full ${i === index ? 'animate-pop-soft' : 'invisible pointer-events-none'}`}
+          >
+            <StagePreview stage={s} videos={videos} />
+          </div>
+        ))}
       </div>
     </div>
   );

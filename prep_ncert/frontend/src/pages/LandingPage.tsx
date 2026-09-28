@@ -247,7 +247,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <Sticker bg="#FFC53D" edge="#E0A81F" className="absolute -bottom-2 left-2 text-[13px] animate-float" rotate={-8}>
                 <Star className="w-4 h-4 fill-current" /> +50 XP
               </Sticker>
-              <Sticker bg="#FF7A59" edge="#E0603F" ink="#fff" className="absolute top-[46%] -right-3 text-[13px] animate-float [animation-delay:-2s]" rotate={8}>
+              <Sticker bg="#FF7A59" edge="#E0603F" ink="#fff" className="absolute -bottom-2 right-8 text-[13px] animate-float [animation-delay:-2s]" rotate={6}>
                 <Flame className="w-4 h-4" /> 5 day streak
               </Sticker>
               <Sticker bg="#fff" edge="#C7CDF8" className="absolute bottom-24 -right-4 font-mono text-[13px] animate-float [animation-delay:-4s]" rotate={-6}>
