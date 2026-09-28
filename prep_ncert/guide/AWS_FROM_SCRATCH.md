@@ -278,6 +278,15 @@ server {
 
     location / {
         try_files $uri $uri/ /index.html;
+        # Security headers for the site pages (the API sets its own via helmet).
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()" always;
+        # Report-only until the browser console shows no violations on every page, then rename to Content-Security-Policy.
+        # Replace YOUR-BUCKET with S3_NOTES_BUCKET.
+        add_header Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' https://accounts.google.com https://www.youtube.com; frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://accounts.google.com; img-src 'self' data: blob: https://i.ytimg.com https://lh3.googleusercontent.com https://YOUR-BUCKET.s3.ap-south-1.amazonaws.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss://yourdomain.com https://YOUR-BUCKET.s3.ap-south-1.amazonaws.com https://accounts.google.com https://www.googleapis.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" always;
     }
 }
 ```
