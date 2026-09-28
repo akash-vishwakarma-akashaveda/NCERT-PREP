@@ -45,7 +45,7 @@ export const STAGES: {
 
 // Chapter titles are sometimes stored fully upper-case in the sheet; shown verbatim that reads as
 // shouting ("Ready for THE WIT THAT WON HEARTS?"), so this is display-only for this marketing card.
-function toDisplayTitle(text: string): string {
+export function toDisplayTitle(text: string): string {
   if (text !== text.toUpperCase() || text === text.toLowerCase()) return text;
   return text.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
 }

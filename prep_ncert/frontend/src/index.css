@@ -399,74 +399,129 @@ body {
   .animate-confetti, .animate-badge-ring { animation: none; }
 }
 
-/* Landing hero: sky and confetti on the left (Class 1–5), graph paper through the middle (6–10),
-   faint formulas on the right (11–12). */
-/* Hero backdrop, built in layers rather than as one loud pattern: a cool base wash, a spotlight
-   behind the headline, a dot grid that fades out before it reaches an edge, and two slow aurora
-   fields. Each layer is weak on its own; the depth comes from stacking them. */
+/* Landing (playful & bold): an indigo hero sprinkled with confetti dots, sticker shapes on top. */
 .landing-hero {
-  position: relative;
   isolation: isolate;
   background:
-    radial-gradient(56rem 34rem at 50% -18%, rgba(59, 79, 224, 0.13), transparent 62%),
-    linear-gradient(180deg, #FFFFFF 0%, #F8F9FD 52%, #F3F5FC 100%);
+    radial-gradient(40rem 26rem at 88% 8%, rgba(139, 108, 240, 0.55), transparent 65%),
+    radial-gradient(34rem 24rem at 4% 96%, rgba(18, 165, 148, 0.45), transparent 65%),
+    #3B4FE0;
 }
-
-/* Dot grid: structure without graph-paper stiffness. Masked so it dissolves towards the edges. */
-.landing-hero::before {
+.landing-hero::before,
+.landing-confetti::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image: radial-gradient(rgba(30, 34, 51, 0.13) 1px, transparent 1px);
-  background-size: 26px 26px;
-  -webkit-mask-image: radial-gradient(75% 65% at 50% 28%, #000 25%, transparent 78%);
-  mask-image: radial-gradient(75% 65% at 50% 28%, #000 25%, transparent 78%);
+  background-image:
+    radial-gradient(circle, rgba(255, 197, 61, 0.55) 2.5px, transparent 3px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.28) 2px, transparent 2.5px),
+    radial-gradient(circle, rgba(255, 158, 181, 0.45) 2.5px, transparent 3px);
+  background-size: 140px 120px, 90px 90px, 170px 150px;
+  background-position: 10px 20px, 50px 60px, 100px 10px;
+}
+.landing-confetti { isolation: isolate; }
+
+/* Faint dot paper behind the bento. */
+.landing-dots {
+  background-image: radial-gradient(rgba(30, 34, 51, 0.09) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
 }
 
-/* A hairline that fades at both ends, instead of a hard rule across the page. */
-.landing-hero::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(30, 34, 51, 0.14), transparent);
+/* Landing feature tiles: chunky border + ledge, lift and straighten slightly on hover. */
+.fun-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.5rem;
+  border-width: 3px;
+  border-radius: 30px;
+  box-shadow: 0 7px 0 var(--edge);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s;
 }
+.fun-tile:hover { transform: translateY(-4px) rotate(-0.6deg); box-shadow: 0 11px 0 var(--edge); }
+.fun-tile-icon {
+  width: 3rem;
+  height: 3rem;
+  padding: 0.7rem;
+  border-radius: 16px;
+  transform: rotate(-8deg);
+  transition: transform 0.3s;
+}
+.fun-tile:hover .fun-tile-icon { transform: rotate(6deg) scale(1.08); }
 
-/* Aurora fields. Heavily blurred, low opacity, drifting slowly enough to be felt, not watched. */
-.landing-aurora {
+/* Landing class cards: flat pastel card, big roman numeral, playful hover. */
+.class-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  border-radius: 26px;
+  border: 2px solid var(--line);
+  background: var(--bg);
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1), box-shadow 0.35s ease, border-color 0.2s;
+}
+.class-card:hover,
+.class-card:focus-visible {
+  transform: translateY(-8px) rotate(var(--tilt));
+  border-color: var(--ink);
+  box-shadow: 0 18px 30px -14px color-mix(in srgb, var(--ink) 55%, transparent);
+  outline: none;
+}
+.class-card:focus-visible { box-shadow: 0 0 0 4px #FFC53D; }
+.class-card-roman {
+  position: relative;
+  font-size: clamp(30px, 7vw, 44px);
+  line-height: 1;
+  color: var(--ink);
+  transition: transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1), letter-spacing 0.35s;
+}
+.class-card:hover .class-card-roman { transform: scale(1.14); letter-spacing: 0.04em; }
+/* Soft circle in the corner that swells to fill behind the numeral. */
+.class-card-blob {
   position: absolute;
   z-index: -1;
+  width: 70%;
+  aspect-ratio: 1;
+  right: -28%;
+  top: -28%;
   border-radius: 9999px;
-  filter: blur(72px);
+  background: var(--line);
+  opacity: 0.55;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
+}
+.class-card:hover .class-card-blob { transform: translate(-38%, 38%) scale(1.6); opacity: 0.45; }
+/* Compact variant for the explorer's class row, and the picked state. */
+.class-card-sm { border-radius: 20px; }
+.class-card-sm .class-card-roman { font-size: 26px; }
+.class-card[aria-pressed='true'] {
+  background: #FFC53D;
+  border-color: #E0A81F;
+  box-shadow: 0 5px 0 #E0A81F;
+  transform: translateY(-3px);
+}
+.class-card[aria-pressed='true'] .class-card-roman { color: #1E2233; }
+.class-card[aria-pressed='true'] .class-card-blob { background: #FFE39A; }
+/* Diagonal light sheen that sweeps across once per hover. */
+.class-card-sheen {
+  position: absolute;
+  inset: -40% auto -40% -60%;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  transform: skewX(-18deg) translateX(0);
   pointer-events: none;
-  will-change: transform;
 }
-.landing-aurora-a {
-  width: 36rem;
-  height: 27rem;
-  top: -9rem;
-  right: -7rem;
-  opacity: 0.5;
-  background: radial-gradient(circle at 32% 34%, #6B7BF0, transparent 68%);
-  animation: aurora-drift 19s ease-in-out infinite alternate;
-}
-.landing-aurora-b {
-  width: 31rem;
-  height: 24rem;
-  bottom: -9rem;
-  left: -8rem;
-  opacity: 0.32;
-  background: radial-gradient(circle at 58% 42%, #12A594, transparent 70%);
-  animation: aurora-drift 25s -7s ease-in-out infinite alternate-reverse;
-}
-@keyframes aurora-drift {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to { transform: translate3d(-2.5rem, 1.75rem, 0) scale(1.09); }
-}
+.class-card:hover .class-card-sheen { transform: skewX(-18deg) translateX(420%); transition: transform 0.7s ease; }
+
 
 /* Frosted panel used by the hero's cards, so they sit on the aurora instead of blocking it out. */
 .glass-panel {
@@ -485,7 +540,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-aurora { animation: none; }
+  .fun-tile, .fun-tile-icon, .class-card, .class-card-roman, .class-card-blob, .class-card-sheen { transition: none; }
 }
 
 /* Scroll reveal. Content only starts hidden once JS marks the page ready, so it never disappears without JS. */

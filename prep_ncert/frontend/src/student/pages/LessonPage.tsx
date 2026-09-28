@@ -90,7 +90,8 @@ export const LessonPage: React.FC<{ publicMode?: boolean }> = ({ publicMode = fa
     ? isLessonUnlocked(
         video,
         user,
-        currentChapterIndex >= 0 ? currentChapterIndex : undefined,
+        // Per-book position (matches /api/videos/featured): each book's first chapters are free previews.
+        currentChapterIndex >= 0 ? outlineNumbers[currentChapterIndex] - 1 : undefined,
         currentVideoIndexInChapter >= 0 ? currentVideoIndexInChapter : undefined,
         policy
       )
@@ -399,7 +400,7 @@ export const LessonPage: React.FC<{ publicMode?: boolean }> = ({ publicMode = fa
                     <ul id={panelId} className="pb-2">
                       {chapter.videos.map((v, li) => {
                         const current = v.youtube_id === video.youtube_id;
-                        const isVidUnlocked = isLessonUnlocked(v, user, ci, li, policy);
+                        const isVidUnlocked = isLessonUnlocked(v, user, outlineNumbers[ci] - 1, li, policy);
 
                         return (
                           <li key={v.youtube_id}>

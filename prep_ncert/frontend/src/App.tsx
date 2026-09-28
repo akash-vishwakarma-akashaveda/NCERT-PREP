@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProgressProvider } from './context/ProgressContext';
 import { DoubtsProvider } from './context/DoubtsContext';
 import { ToastProvider } from './context/ToastContext';
 import { CatalogProvider, useCatalogContext } from './context/CatalogContext';
-import { NotesTarget } from './types';
 import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
 import { AuthPages } from './components/auth/AuthPages';
 import { SearchResultsModal } from './components/search/SearchResultsModal';
-import { RevisionNotesModal } from './components/app/RevisionNotesModal';
 import { LandingPage } from './pages/LandingPage';
 import { DemoPage } from './pages/DemoPage';
-import { BrowsePage } from './pages/BrowsePage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { ParentConsentPage } from './pages/ParentConsentPage';
 import { ResetPasswordPage, VerifyEmailPage } from './pages/EmailLinkPages';
@@ -26,9 +23,10 @@ import { LeaderboardPage } from './student/pages/LeaderboardPage';
 import { TextbooksPage } from './student/pages/TextbooksPage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
-type PublicTab = 'home' | 'browse' | 'profile' | 'privacy';
-const OPEN_WHEN_SIGNED_IN = ['/privacy', '/browse', '/parent-consent', '/verify-email', '/reset-password'];
-const PUBLIC_PATHS: Partial<Record<PublicTab, string>> = { home: '/', browse: '/browse', privacy: '/privacy', profile: '/app' };
+type PublicTab = 'home' | 'browse' | 'demo' | 'profile' | 'privacy';
+const FULL_BLEED = ['/', '/demo'];
+const OPEN_WHEN_SIGNED_IN = ['/privacy', '/demo', '/parent-consent', '/verify-email', '/reset-password'];
+const PUBLIC_PATHS: Partial<Record<PublicTab, string>> = { home: '/', browse: '/browse', demo: '/demo', privacy: '/privacy', profile: '/app' };
 
 // Visitor pages: landing, syllabus explorer, privacy, public lesson view.
 const PublicLayout: React.FC = () => {
@@ -51,13 +49,14 @@ const PublicLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col text-[#1E2233] bg-[#F5F6FA]">
       <Navbar
-        currentTab={pathname === '/browse' ? 'browse' : 'home'}
+        // Only '/' is 'home': elsewhere the section links must navigate home before scrolling.
+        currentTab={pathname === '/' ? 'home' : pathname === '/demo' ? 'demo' : 'privacy'}
         onNavigate={go}
         onOpenSearch={() => setSearchOpen(true)}
         showSearch={pathname !== '/'}
       />
-      {/* The landing page draws its own full-width bands; other public pages sit in the site column. */}
-      <main className={pathname === '/' ? 'flex-1 w-full min-w-0' : 'flex-1 w-full min-w-0 max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-6'}>
+      {/* The landing and demo pages draw their own full-width bands; other public pages sit in the site column. */}
+      <main className={FULL_BLEED.includes(pathname) ? 'flex-1 w-full min-w-0' : 'flex-1 w-full min-w-0 max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 pt-6'}>
         <Outlet context={{ openSearch: () => setSearchOpen(true) }} />
       </main>
       <Footer onNavigate={go} />
@@ -82,34 +81,18 @@ const LandingRoute: React.FC = () => {
       classes={classes}
       allVideos={allVideos}
       catalogLoading={loading}
-      onExploreCurriculum={() => navigate('/browse')}
+      onExploreCurriculum={() => navigate('/demo#explore')}
       onSelectVideo={(v) => navigate(`/watch/${encodeURIComponent(v.youtube_id)}`)}
-      onSelectClass={(classSort) => navigate(`/browse?class=${classSort}`)}
+      onSelectClass={(classSort) => navigate(`/demo?class=${classSort}#explore`)}
       onLaunchDemo={() => navigate('/demo')}
     />
   );
 };
 
-const BrowseRoute: React.FC = () => {
-  const { classes, getSubjectsForClass } = useCatalogContext();
-  const [params, setParams] = useSearchParams();
-  const navigate = useNavigate();
-  const [notesTarget, setNotesTarget] = useState<NotesTarget | null>(null);
-  return (
-    <>
-      <BrowsePage
-        classes={classes}
-        selectedClassSort={params.get('class') || '10'}
-        selectedSubjectName={params.get('subject') || undefined}
-        getSubjectsForClass={getSubjectsForClass}
-        onSelectClass={(c) => setParams({ class: c })}
-        onSelectVideo={(v) => navigate(`/watch/${encodeURIComponent(v.youtube_id)}`)}
-        onNavigateHome={() => navigate('/')}
-        onOpenNotes={setNotesTarget}
-      />
-      {notesTarget && <RevisionNotesModal isOpen onClose={() => setNotesTarget(null)} target={notesTarget} />}
-    </>
-  );
+// The syllabus explorer lives on the demo page now; old /browse links (and ?class/?subject) land on it.
+const BrowseRedirect: React.FC = () => {
+  const { search } = useLocation();
+  return <Navigate to={`/demo${search}#explore`} replace />;
 };
 
 const AdminRoute: React.FC = () => {
@@ -135,7 +118,7 @@ export const App: React.FC = () => (
             <Routes>
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<LandingRoute />} />
-                <Route path="/browse" element={<BrowseRoute />} />
+                <Route path="/browse" element={<BrowseRedirect />} />
                 <Route path="/demo" element={<DemoPage />} />
                 <Route path="/privacy" element={<PrivacyRoute />} />
                 <Route path="/parent-consent" element={<ParentConsentPage />} />
