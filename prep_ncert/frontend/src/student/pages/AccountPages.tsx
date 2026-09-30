@@ -402,7 +402,11 @@ const ReminderPreview: React.FC = () => {
   );
 };
 
-export const RemindersPage: React.FC = () => (
+export const RemindersPage: React.FC = () => {
+  // Reminders are emailed study nudges for students; educators have nothing to configure here.
+  const { isAdmin } = useAuth();
+  if (isAdmin) return <Navigate to="/app" replace />;
+  return (
   <div className="space-y-6">
     <PageHeader section="reminders" title="Reminders" description="Choose if, how often and when we email you your next lesson." />
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,1fr)] gap-5 items-start">
@@ -410,7 +414,8 @@ export const RemindersPage: React.FC = () => (
       <ReminderPreview />
     </div>
   </div>
-);
+  );
+};
 
 // Educators get their own account page, loaded only for admins.
 const AdminProfile = lazy(() => import('../../pages/admin/AdminProfile').then((m) => ({ default: m.AdminProfile })));

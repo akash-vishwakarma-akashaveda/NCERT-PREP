@@ -25,6 +25,7 @@ import statsRouter from './routes/stats.js';
 import settingsRouter from './routes/settings.js';
 import { sheetSyncRouter } from './routes/sheet-sync.js';
 import { startSheetSyncScheduler } from './shared/sheetScheduler.js';
+import { startReminderScheduler } from './jobs/reminders.js';
 import { SESSION_COOKIE, verifySessionToken } from './middleware/auth.js';
 
 const app = express();
@@ -92,3 +93,4 @@ io.on('connection', (socket) => {
 const port = process.env.PORT ?? 4000;
 httpServer.listen(port, () => logger.info(`API listening on :${port}`));
 startSheetSyncScheduler();
+startReminderScheduler();

@@ -81,6 +81,8 @@ model User {
   remindersEnabled Boolean       @default(false)
   reminderFrequency String       @default("daily")
   reminderHour     Int?
+  // Set when a reminder email is claimed for sending; stops a second send in the same slot.
+  lastReminderAt   DateTime?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 

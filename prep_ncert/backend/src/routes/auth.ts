@@ -32,11 +32,12 @@ const emailLimiter = rateLimit(limiterOptions);
 
 function sendVerifyEmail(userId: string, email: string) {
   const verifyToken = jwt.sign({ userId, purpose: 'verify-email' }, process.env.SESSION_SECRET!, { expiresIn: '1d' });
-  return sendEmail(
-    email,
-    'Verify your NCERT Prep account',
-    `${process.env.FRONTEND_ORIGIN}/verify-email?token=${verifyToken}`,
-  );
+  return sendEmail(email, 'Verify your NCERT Prep account', {
+    heading: 'Confirm your email address',
+    lines: ['Welcome to NCERT Prep! Please confirm this is your email address to finish setting up your account.'],
+    action: { label: 'Verify email', url: `${process.env.FRONTEND_ORIGIN}/verify-email?token=${verifyToken}` },
+    footnote: 'This link expires in 24 hours. If you did not create an account, you can ignore this email.',
+  });
 }
 
 router.post('/google', authLimiter, async (req, res) => {
@@ -169,11 +170,12 @@ router.post('/forgot-password', emailLimiter, async (req, res) => {
       process.env.SESSION_SECRET!,
       { expiresIn: '1h' },
     );
-    await sendEmail(
-      email,
-      'Reset your NCERT Prep password',
-      `${process.env.FRONTEND_ORIGIN}/reset-password?token=${resetToken}`,
-    );
+    await sendEmail(email, 'Reset your NCERT Prep password', {
+      heading: 'Reset your password',
+      lines: ['We received a request to reset the password for your NCERT Prep account.'],
+      action: { label: 'Choose a new password', url: `${process.env.FRONTEND_ORIGIN}/reset-password?token=${resetToken}` },
+      footnote: 'This link expires in 1 hour. If you did not ask for this, you can ignore this email and your password stays the same.',
+    });
   }
   // Same response whether or not the account exists / has a password, so this can't be used to enumerate emails.
   res.json({ ok: true });

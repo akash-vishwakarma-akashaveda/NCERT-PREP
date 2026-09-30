@@ -176,11 +176,15 @@ router.post('/me/consent/parent-request', async (req, res) => {
     }),
   ]);
 
-  const sent = await sendEmail(
-    parentEmail,
-    'Approve your child’s NCERT Prep account',
-    `${process.env.FRONTEND_ORIGIN}/parent-consent?token=${token}`,
-  );
+  const sent = await sendEmail(parentEmail, 'Approve your child’s NCERT Prep account', {
+    heading: `Hello ${parentName}, your child wants to use NCERT Prep`,
+    lines: [
+      'Your child has signed up for NCERT Prep, a free learning app with NCERT video lessons for their class.',
+      'Because they are under 18, we need your permission before they can use their account. Please review what we collect and approve or decline.',
+    ],
+    action: { label: 'Review and approve', url: `${process.env.FRONTEND_ORIGIN}/parent-consent?token=${token}` },
+    footnote: `This link expires in ${CONSENT_REQUEST_TTL_DAYS} days. If you do not recognise this request, you can ignore this email.`,
+  });
   if (!sent) return res.status(502).json({ error: 'We could not send the email to your parent right now. Please try again later.' });
 
   res.json({ parentEmail });

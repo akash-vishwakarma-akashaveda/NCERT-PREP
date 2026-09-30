@@ -23,6 +23,7 @@ import { useDashboardConfig } from '../../hooks/useDashboardConfig';
 import { currentStreak } from '../../data/gamification';
 import { Mascot, useStage } from '../../student/stage';
 import { isSoundEnabled, setSoundEnabled } from '../../services/notificationSound';
+import { reminderSummary } from '../profile/ReminderSettingsCard';
 
 interface NotificationCardProps {
   isOpen: boolean;
@@ -151,9 +152,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     });
   }
 
-  // 3. Class Announcement Notifications
+  // 3. Class Announcement Notifications (students only: educators write them, they don't receive them)
   const userClass = user?.grade_preference || '';
-  const targetedAnns = (config?.announcements || []).filter(
+  const targetedAnns = (isAdmin ? [] : config?.announcements || []).filter(
     (ann) =>
       ann.isActive &&
       (ann.targetClass === 'all' ||
@@ -202,13 +203,13 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     });
   }
 
-  // 5. Reminder Settings Status
-  if (user && user.reminders_enabled) {
+  // 5. Reminder Settings Status (reminders are a student feature)
+  if (!isAdmin && user?.reminders_enabled) {
     notifications.push({
       id: 'reminder_active',
       type: 'reminder',
       title: 'Study Reminder Scheduled',
-      message: `Friendly email reminders set for ${user.reminder_hour || 19}:00 IST (${user.reminder_frequency || 'weekly'}).`,
+      message: `Email reminders on: ${reminderSummary(true, user.reminder_frequency, user.reminder_hour)} IST.`,
       unread: false,
       actionUrl: '/app/reminders',
       icon: Clock,
@@ -364,11 +365,11 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         <button
           onClick={() => {
             onClose();
-            navigate('/app/reminders');
+            navigate(isAdmin ? '/app?tab=feedback' : '/app/reminders');
           }}
           className="hover:text-[color:var(--brand)] transition-colors flex items-center gap-1 cursor-pointer"
         >
-          <span>Reminder settings</span>
+          <span>{isAdmin ? 'Student feedback' : 'Reminder settings'}</span>
         </button>
       </div>
     </div>
